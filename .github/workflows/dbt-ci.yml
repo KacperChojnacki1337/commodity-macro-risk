@@ -1,0 +1,59 @@
+name: dbt CI
+
+# Runs only when dbt files change. No-op until a dbt project exists
+# (dbt/dbt_project.yml). Real steps light up automatically once it does.
+on:
+  pull_request:
+    branches: [main]
+    paths: ["dbt/**"]
+  push:
+    branches: [main]
+    paths: ["dbt/**"]
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  dbt-build:
+    name: dbt-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Detect dbt project
+        id: check
+        run: |
+          if [ -f dbt/dbt_project.yml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No dbt project yet (dbt/dbt_project.yml missing) -- skipping dbt build."
+          fi
+
+      - name: Set up Python
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt (Snowflake adapter)
+        if: steps.check.outputs.exists == 'true'
+        run: pip install dbt-snowflake
+
+      # dbt build against the DEV target on PRs. Credentials come from repo
+      # secrets (see .github/workflows/README.md) -- never committed.
+      - name: dbt deps and build (dev target)
+        if: steps.check.outputs.exists == 'true'
+        working-directory: dbt
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+        run: |
+          dbt deps
+          dbt build --target dev
