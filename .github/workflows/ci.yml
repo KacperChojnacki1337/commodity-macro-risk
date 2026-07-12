@@ -1,0 +1,74 @@
+name: CI
+
+# When does this run? On PRs targeting main, and on pushes to main.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel an in-progress run if a new commit is pushed to the same branch/PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Validate the metadata-driven ingestion control file.
+  # --------------------------------------------------------------------------
+  validate-sources:
+    name: validate-sources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: sources.json is valid JSON
+        run: python -c "import json; json.load(open('ingestion/control/sources.json'))"
+
+      - name: sources.json has the required shape
+        run: |
+          # Every source must have these keys, and source_id must be unique.
+          jq -e '
+            .sources
+            and (.sources | type == "array")
+            and (.sources | length > 0)
+            and (all(.sources[];
+                  has("source_id") and has("enabled") and has("base_url")
+                  and has("auth_type") and has("frequency")
+                  and has("landing_path_template")))
+            and ((.sources | map(.source_id) | length)
+                 == (.sources | map(.source_id) | unique | length))
+          ' ingestion/control/sources.json > /dev/null
+          echo "sources.json passed schema checks."
+
+  # --------------------------------------------------------------------------
+  # Format-check and validate the Terraform code (no Azure auth needed).
+  # --------------------------------------------------------------------------
+  terraform:
+    name: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.3"
+
+      - name: terraform fmt (check only)
+        run: terraform -chdir=infra fmt -check -recursive
+
+      - name: Validate each environment
+        run: |
+          set -e
+          for env in dev prod; do
+            echo "::group::validate $env"
+            terraform -chdir="infra/envs/$env" init -backend=false -input=false
+            terraform -chdir="infra/envs/$env" validate
+            echo "::endgroup::"
+          done
