@@ -1,0 +1,13 @@
+# Copy this file to terraform.tfvars and fill in globally-unique names.
+# terraform.tfvars is gitignored (it may hold environment-specific values).
+#
+# Naming rules to respect:
+#   storage_account_name : 3-24 chars, lowercase letters + digits only, GLOBALLY unique
+#   key_vault_name       : 3-24 chars, start with a letter, letters/digits/hyphens, GLOBALLY unique
+#   data_factory_name    : 3-63 chars, letters/digits/hyphens, GLOBALLY unique
+
+location             = "westeurope"
+resource_group_name  = "rg-commodity-risk-dev"
+storage_account_name = "stcommodityriskdev01"
+key_vault_name       = "kv-commodity-risk-dev"
+data_factory_name    = "adf-commodity-risk-dev"
