@@ -1,0 +1,41 @@
+# === Secrets & credentials (NEVER commit) ===
+*.env
+.env
+.env.*
+*.pem
+*.key
+secrets/
+**/profiles.yml          # dbt connection profile (contains Snowflake creds)
+!dbt/profiles.example.yml # ...but keep the safe example template
+
+# === Terraform ===
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars                  # may contain secrets; commit *.tfvars.example instead
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+
+# === dbt ===
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+.user.yml
+
+# === Python (helper scripts / dbt) ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# === Power BI (large binaries; publish screenshots to docs instead) ===
+*.pbix
+
+# === OS / editor noise ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

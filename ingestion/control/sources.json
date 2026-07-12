@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "source_id": "nbp",
+      "enabled": true,
+      "description": "National Bank of Poland — daily FX mid rates (USD/PLN, EUR/PLN).",
+      "base_url": "https://api.nbp.pl/api/exchangerates/tables/A",
+      "auth_type": "none",
+      "secret_name": null,
+      "http_method": "GET",
+      "response_format": "json",
+      "frequency": "daily",
+      "landing_container": "raw",
+      "landing_path_template": "source=nbp/dataset=fx_rates_table_a/ingest_date={ingest_date}",
+      "file_name_template": "nbp_table_a_{ingest_date}.json",
+      "incremental_strategy": "full_snapshot",
+      "date_window_days": 93,
+      "notes": "Keyless. Range endpoint limited to ~93 days per request; backfill in windows."
+    }
+  ]
+}
