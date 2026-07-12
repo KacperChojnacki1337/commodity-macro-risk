@@ -77,6 +77,21 @@ Futures use **stooq.pl** (stable CSV), not Yahoo Finance (no official API).
   `terraform plan`; on merge to `main` → `dbt run` against **prod**.
 - **dbt** runs as **dbt Core** inside GitHub Actions (no dbt Cloud).
 
+### Branching & PR flow
+
+- **Trunk-based:** one long-lived branch `main`, always deployable. **No
+  `develop` branch** — for a solo project it would only duplicate the
+  environment split that CI + Snowflake already handle.
+- Work happens on **short-lived branches** `feat/...`, `fix/...`, `chore/...`,
+  `docs/...`; merge into `main` via a **Pull Request**.
+- **`main` is protected:** no direct pushes (enforced for admins too), a PR is
+  required, force-pushes and branch deletion are blocked, and **linear history**
+  is enforced (merge via **squash** or **rebase**, no merge commits).
+- **Environments are not git branches.** dev vs prod = Snowflake schemas + dbt
+  targets selected by CI (PR → dev, merge to `main` → prod).
+- Once CI exists (workflow in the CI skeleton issue), a **green build becomes a
+  required status check** before merge.
+
 ## 7. Build Order (milestones)
 
 Walking skeleton first: **NBP** goes fully end-to-end before anything else,
