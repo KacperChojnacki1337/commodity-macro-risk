@@ -34,6 +34,17 @@ Nothing here costs anything until `terraform apply`. `init`, `fmt`, and
 `validate` run offline/free. Chosen defaults keep cost minimal: `Standard`/`LRS`
 storage, `standard` Key Vault SKU. See [../docs/cost_model.md](../docs/cost_model.md).
 
+## Naming (trial-portable)
+
+Resource names are **derived automatically** as
+`<prefix>-<environment>-<random-suffix>` (see `modules/platform`). You never
+type a globally-unique name. The random suffix is stored in state, so it is
+stable across applies on the same trial, but regenerates on a fresh state — so
+moving to a new Azure trial produces new unique names with **zero code edits**.
+
+Only two things are ever environment/trial-specific, and neither lives in git:
+the Azure login (`az login`) and `ARM_SUBSCRIPTION_ID`.
+
 ## Usage (per environment)
 
 Run everything from inside an env folder, e.g. `infra/envs/dev`.
@@ -41,13 +52,12 @@ Run everything from inside an env folder, e.g. `infra/envs/dev`.
 ```bash
 cd infra/envs/dev
 
-# 1) Provide values (globally-unique names!)
-cp terraform.tfvars.example terraform.tfvars
-#   edit terraform.tfvars
-
-# 2) Authenticate to Azure (interactive)
+# 1) Authenticate to Azure (interactive) and select the subscription
 az login
 export ARM_SUBSCRIPTION_ID="<your-subscription-id>"
+
+# 2) (optional) override defaults — NOT required; defaults just work
+# cp terraform.tfvars.example terraform.tfvars
 
 # 3) Standard workflow
 terraform init        # download providers, prepare the working dir
@@ -70,6 +80,34 @@ terraform destroy     # removes all resources in this environment
 Because everything is code, a fresh environment can be rebuilt from scratch with
 `terraform apply` (important: both Azure and Snowflake run on time-limited trial
 credit).
+
+## Switching Azure trials
+
+When the current trial nears expiry, migrating to a fresh one is deliberately
+cheap:
+
+**Before the old trial expires**
+
+```bash
+cd infra/envs/dev && terraform destroy   # release resources cleanly
+```
+
+**On the new trial**
+
+```bash
+az login                                  # log into the NEW account
+export ARM_SUBSCRIPTION_ID="<new-sub-id>"
+
+cd infra/envs/dev
+rm -rf .terraform terraform.tfstate*      # drop old local state (old sub)
+terraform init
+terraform apply                           # new unique names generated automatically
+```
+
+No code or `tfvars` changes are needed: names are regenerated, and the
+subscription is supplied purely via `az login` + `ARM_SUBSCRIPTION_ID`. This is
+why the whole platform must stay reproducible from code (see the project
+charter, §10).
 
 ## State
 

@@ -1,8 +1,5 @@
-# Copy this file to terraform.tfvars and fill in globally-unique names.
-# See dev/terraform.tfvars.example for the naming rules.
+# Copy to terraform.tfvars only if you want to override defaults.
+# Resource names are generated automatically (globally-unique).
 
-location             = "westeurope"
-resource_group_name  = "rg-commodity-risk-prod"
-storage_account_name = "stcommodityriskprod01"
-key_vault_name       = "kv-commodity-risk-prod"
-data_factory_name    = "adf-commodity-risk-prod"
+location    = "westeurope"
+name_prefix = "cmdrisk"

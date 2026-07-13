@@ -1,8 +1,11 @@
 # Inputs for the platform composition module.
-# One object that describes a whole environment (dev or prod).
+#
+# Resource names are NOT passed in. They are derived from name_prefix +
+# environment + a random suffix, so a fresh apply on a new Azure trial always
+# gets globally-unique names with zero code/tfvars edits.
 
 variable "environment" {
-  description = "Environment name: dev or prod. Used in tags."
+  description = "Environment name: dev or prod. Used in names and tags."
   type        = string
 
   validation {
@@ -16,22 +19,13 @@ variable "location" {
   type        = string
 }
 
-variable "resource_group_name" {
-  description = "Name of the resource group to create."
+variable "name_prefix" {
+  description = "Short lowercase token baked into every resource name (2-8 chars, letters/digits)."
   type        = string
-}
+  default     = "cmdrisk"
 
-variable "storage_account_name" {
-  description = "Globally-unique ADLS Gen2 storage account name."
-  type        = string
-}
-
-variable "key_vault_name" {
-  description = "Globally-unique Key Vault name."
-  type        = string
-}
-
-variable "data_factory_name" {
-  description = "Globally-unique Data Factory name."
-  type        = string
+  validation {
+    condition     = can(regex("^[a-z0-9]{2,8}$", var.name_prefix))
+    error_message = "name_prefix must be 2-8 lowercase alphanumeric characters."
+  }
 }

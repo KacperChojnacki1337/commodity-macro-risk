@@ -1,4 +1,5 @@
-# PROD environment inputs. Values supplied via terraform.tfvars.
+# PROD environment inputs. Resource names are derived automatically
+# (name_prefix + environment + random suffix).
 
 variable "location" {
   description = "Azure region."
@@ -6,22 +7,8 @@ variable "location" {
   default     = "westeurope"
 }
 
-variable "resource_group_name" {
-  description = "Resource group name for the prod environment."
+variable "name_prefix" {
+  description = "Short lowercase token baked into every resource name (2-8 chars)."
   type        = string
-}
-
-variable "storage_account_name" {
-  description = "Globally-unique ADLS Gen2 account name (3-24 lowercase alphanumeric)."
-  type        = string
-}
-
-variable "key_vault_name" {
-  description = "Globally-unique Key Vault name."
-  type        = string
-}
-
-variable "data_factory_name" {
-  description = "Globally-unique Data Factory name."
-  type        = string
+  default     = "cmdrisk"
 }
