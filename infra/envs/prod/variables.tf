@@ -2,9 +2,9 @@
 # (name_prefix + environment + random suffix).
 
 variable "location" {
-  description = "Azure region."
+  description = "Azure region. Poland Central: accepts trial customers and fits the PL domain (West Europe often rejects new trials)."
   type        = string
-  default     = "westeurope"
+  default     = "polandcentral"
 }
 
 variable "name_prefix" {

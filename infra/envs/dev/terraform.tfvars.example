@@ -3,5 +3,5 @@
 # names are generated automatically (globally-unique), so this file is safe to
 # leave untouched when moving to a new Azure trial.
 
-location    = "westeurope"
+location    = "polandcentral"
 name_prefix = "cmdrisk"
