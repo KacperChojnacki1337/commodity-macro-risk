@@ -50,7 +50,7 @@ module "adls" {
   resource_group_name  = azurerm_resource_group.this.name
   location             = azurerm_resource_group.this.location
   storage_account_name = local.storage_account_name
-  container_names      = ["raw"]
+  container_names      = ["raw", "config"] # raw = landing zone; config = sources.json for metadata-driven ingestion
   tags                 = local.tags
 }
 
@@ -71,4 +71,13 @@ module "adf" {
   location            = azurerm_resource_group.this.location
   data_factory_name   = local.data_factory_name
   tags                = local.tags
+}
+
+# Grant ADF's managed identity read/write on the storage account, so the Copy
+# activity can land files with NO secrets (Azure AD auth). "Storage Blob Data
+# Contributor" covers both reading sources.json and writing to the raw zone.
+resource "azurerm_role_assignment" "adf_blob" {
+  scope                = module.adls.storage_account_id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = module.adf.identity_principal_id
 }
