@@ -1,0 +1,44 @@
+# Snowflake — non-dbt DDL
+
+SQL that sets up Snowflake outside of dbt: account foundations, external
+access to ADLS, and the BRONZE landing tables. Run these in a Snowsight
+worksheet as `ACCOUNTADMIN`. (Least-privilege roles `ROLE_LOADER` /
+`ROLE_ANALYST` come in the RBAC milestone, #10.)
+
+Transformations (STAGING -> MARTS) live in the dbt project, not here. Note the
+name clash: a Snowflake **stage** (a pointer to files, used by `COPY`) is not
+the dbt **staging** layer (SQL models that clean data already in Snowflake).
+
+## Run order
+
+| File | What it does | Notes |
+|------|--------------|-------|
+| `00_databases_warehouses.sql` | Warehouse `WH_XS_ELT` (X-Small, auto-suspend), database `COMMODITY_RISK`, schemas `BRONZE`/`STAGING`/`MARTS`. | |
+| `02_storage_integration.sql` | Storage integration + JSON file format + external stage over the ADLS `raw` zone. | Split: run **PART 1**, do the Azure handshake below, then run **PART 2**. |
+| `03_bronze_tables.sql` | BRONZE landing table (VARIANT + load metadata) and `COPY INTO` for NBP. | |
+
+## Azure handshake (between PART 1 and PART 2 of `02`)
+
+Secretless external access: Snowflake gets its own identity in the Azure AD
+tenant; we grant that identity read access to the storage account.
+
+1. Run PART 1, then `DESC STORAGE INTEGRATION azure_adls_int`.
+2. Open `AZURE_CONSENT_URL` in a browser and **Accept** (registers the
+   Snowflake app in the Azure AD tenant).
+3. Grant the Snowflake app (`AZURE_MULTI_TENANT_APP_NAME`, minus the numeric
+   suffix) the **Storage Blob Data Reader** role on the storage account:
+
+   ```bash
+   az role assignment create \
+     --assignee-object-id <snowflake-sp-object-id> \
+     --assignee-principal-type ServicePrincipal \
+     --role "Storage Blob Data Reader" \
+     --scope /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Storage/storageAccounts/<account>
+   ```
+4. Run PART 2 (`LIST @stg_adls_raw` should show the files).
+
+## No secrets
+
+These scripts contain no credentials. External access uses the storage
+integration (Azure AD), not account keys or SAS tokens. The tenant ID and
+resource names are identifiers, not secrets.
