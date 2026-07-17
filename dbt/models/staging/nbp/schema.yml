@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: stg_nbp__fx_rates
+    description: >
+      NBP Table A average FX rates, typed and deduplicated.
+      Grain: one row per (effective_date, currency_code).
+      Rates are PLN per 1 unit of the currency.
+    columns:
+      - name: fx_rate_key
+        description: Surrogate key over the grain (effective_date + currency_code).
+        tests:
+          - unique
+          - not_null
+
+      - name: effective_date
+        description: Date the NBP rate table is effective for.
+        tests:
+          - not_null
+
+      - name: currency_code
+        description: ISO 4217 currency code (e.g. USD, EUR).
+        tests:
+          - not_null
+
+      - name: currency_name
+        description: Currency name as published by NBP (Polish).
+
+      - name: mid_rate
+        description: NBP average (mid) rate — PLN per 1 unit of the currency.
+        tests:
+          - not_null
+
+      - name: table_no
+        description: NBP table number, e.g. 133/A/NBP/2026.
+
+      - name: _src_file
+        description: Source file in the ADLS raw zone (lineage).
+        tests:
+          - not_null
+
+      - name: _loaded_at
+        description: When COPY INTO landed the source file (lineage).
+        tests:
+          - not_null
