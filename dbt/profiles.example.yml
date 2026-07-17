@@ -1,0 +1,30 @@
+# Template for dbt's connection profile.
+#
+# Copy to profiles.yml (gitignored) and provide the values via environment
+# variables — never hard-code credentials here or anywhere in the repo.
+#
+#   SNOWFLAKE_ACCOUNT    e.g. MYORG-WT82864
+#   SNOWFLAKE_USER       your Snowflake login name
+#   SNOWFLAKE_PASSWORD   secret — set as an environment variable only
+#   SNOWFLAKE_ROLE       defaults to ACCOUNTADMIN (until ROLE_LOADER exists, #10)
+#   SNOWFLAKE_WAREHOUSE  defaults to WH_XS_ELT
+#   SNOWFLAKE_DATABASE   defaults to COMMODITY_RISK
+#
+# In CI these come from GitHub Actions secrets (see .github/workflows/README.md).
+#
+# Run dbt with:  dbt build --profiles-dir .
+
+commodity_risk:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'WH_XS_ELT') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'COMMODITY_RISK') }}"
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: false

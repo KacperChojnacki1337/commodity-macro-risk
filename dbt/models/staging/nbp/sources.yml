@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: >
+      Raw landing zone in Snowflake, loaded from the ADLS raw zone by COPY INTO
+      (see snowflake/03_bronze_tables.sql). dbt only reads from here.
+    # No `database:` on purpose — dbt uses the target's database, so a dev run
+    # against a zero-copy clone reads the clone, not prod.
+    schema: BRONZE
+
+    tables:
+      - name: nbp_fx_rates_raw
+        description: >
+          NBP Table A (average FX rates) as landed: one row per source file,
+          holding the raw JSON document plus load lineage.
+        columns:
+          - name: raw
+            description: The untouched NBP JSON document (VARIANT).
+          - name: _src_file
+            description: Path of the source file in the ADLS raw zone.
+          - name: _loaded_at
+            description: Timestamp when COPY INTO loaded the file.

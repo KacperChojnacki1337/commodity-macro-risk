@@ -1,7 +1,9 @@
 name: dbt CI
 
-# Runs only when dbt files change. No-op until a dbt project exists
-# (dbt/dbt_project.yml). Real steps light up automatically once it does.
+# Runs only when dbt files change. Builds the dbt project against the DEV
+# target when Snowflake secrets are configured; otherwise it skips cleanly
+# (so the repo stays green when no warehouse is attached, e.g. after a trial
+# expires).
 on:
   pull_request:
     branches: [main]
@@ -9,7 +11,7 @@ on:
   push:
     branches: [main]
     paths: ["dbt/**"]
-  workflow_dispatch: {} # allow manual runs from the Actions tab
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -22,30 +24,41 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Detect dbt project
+      - name: Detect dbt project and Snowflake secrets
         id: check
+        env:
+          ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
         run: |
-          if [ -f dbt/dbt_project.yml ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+          if [ ! -f dbt/dbt_project.yml ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No dbt project (dbt/dbt_project.yml missing) -- skipping."
+          elif [ -z "$ACCOUNT" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Snowflake secrets not configured -- skipping dbt build."
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No dbt project yet (dbt/dbt_project.yml missing) -- skipping dbt build."
+            echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Python
-        if: steps.check.outputs.exists == 'true'
+        if: steps.check.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dbt (Snowflake adapter)
-        if: steps.check.outputs.exists == 'true'
+        if: steps.check.outputs.run == 'true'
         run: pip install dbt-snowflake
 
-      # dbt build against the DEV target on PRs. Credentials come from repo
-      # secrets (see .github/workflows/README.md) -- never committed.
-      - name: dbt deps and build (dev target)
-        if: steps.check.outputs.exists == 'true'
+      # profiles.yml is gitignored (local convenience); the committed template
+      # is credential-free, so CI just materializes it and injects secrets as
+      # environment variables.
+      - name: Materialize profiles.yml from the template
+        if: steps.check.outputs.run == 'true'
+        working-directory: dbt
+        run: cp profiles.example.yml profiles.yml
+
+      - name: dbt build (dev target)
+        if: steps.check.outputs.run == 'true'
         working-directory: dbt
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -54,6 +67,4 @@ jobs:
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-        run: |
-          dbt deps
-          dbt build --target dev
+        run: dbt build --profiles-dir . --target dev

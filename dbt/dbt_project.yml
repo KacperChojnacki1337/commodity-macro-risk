@@ -1,0 +1,32 @@
+name: "commodity_risk"
+version: "1.0.0"
+config-version: 2
+
+# Which profile (connection) to use — see profiles.example.yml.
+profile: "commodity_risk"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Medallion layout. Schemas are forced to exact names by the
+# generate_schema_name macro (no target-prefix), matching the Snowflake
+# schemas created in snowflake/00_databases_warehouses.sql.
+models:
+  commodity_risk:
+    staging:
+      +schema: STAGING
+      +materialized: view
+    intermediate:
+      +schema: STAGING
+      +materialized: view
+    marts:
+      +schema: MARTS
+      +materialized: table

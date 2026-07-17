@@ -1,3 +1,6 @@
+# NOTE: .gitignore only treats "#" as a comment at the START of a line.
+# Never put trailing comments after a pattern — they become part of it.
+
 # === Secrets & credentials (NEVER commit) ===
 *.env
 .env
@@ -5,18 +8,23 @@
 *.pem
 *.key
 secrets/
-**/profiles.yml          # dbt connection profile (contains Snowflake creds)
-!dbt/profiles.example.yml # ...but keep the safe example template
+
+# dbt connection profile (may contain Snowflake credentials)...
+**/profiles.yml
+# ...but keep the credential-free template.
+!dbt/profiles.example.yml
 
 # === Terraform ===
 .terraform/
 *.tfstate
 *.tfstate.*
-*.tfvars                  # may contain secrets; commit *.tfvars.example instead
-!*.tfvars.example
 crash.log
 override.tf
 override.tf.json
+
+# tfvars may contain secrets; commit *.tfvars.example instead.
+*.tfvars
+!*.tfvars.example
 
 # === dbt ===
 dbt/target/
