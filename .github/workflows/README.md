@@ -8,6 +8,7 @@ GitHub Actions that guard `main`. Each `.yml` here is an independent workflow.
 |------|---------|--------------|----------------|
 | `ci.yml` | every PR to `main` + push to `main` | `validate-sources` (sources.json valid + required shape) and `terraform` (fmt-check + validate for dev & prod) | no |
 | `dbt-ci.yml` | PR/push touching `dbt/**` (+ manual) | Builds the dbt project against the **dev** target. Skips cleanly if the dbt project or the Snowflake secrets are missing. | yes (Snowflake) |
+| `sync-control-metadata.yml` | push to `main` touching `ingestion/control/sources.json` (+ manual) | Uploads `sources.json` to the ADLS `config` container, so ADF executes what the repo says. Skips cleanly if Azure isn't configured. | **no** — OIDC |
 
 `ci.yml` needs no cloud access — Terraform `validate` and JSON checks run
 offline — so it stays green from day one. `validate-sources` and `terraform`
@@ -26,10 +27,36 @@ Currently configured (used by `dbt-ci.yml`):
 | `SNOWFLAKE_WAREHOUSE` | `WH_XS_ELT` |
 | `SNOWFLAKE_DATABASE` | `COMMODITY_RISK` |
 
-Not needed yet: `ARM_SUBSCRIPTION_ID` / `ARM_TENANT_ID` / `ARM_CLIENT_ID` /
-`ARM_CLIENT_SECRET` — only if a `terraform plan` job is added to CI.
-
 **Never commit secret values.** Reference them as `${{ secrets.NAME }}` only.
+
+## Variables (not secrets)
+
+`sync-control-metadata.yml` authenticates to Azure with **OIDC**, so there is no
+Azure password/secret anywhere. What it needs are plain identifiers, stored as
+repo **Variables** (readable by design — they are useless without the federated
+trust):
+
+| Variable | Meaning |
+|----------|---------|
+| `AZURE_CLIENT_ID` | App registration (`gh-actions-commodity-macro-risk`) client ID |
+| `AZURE_TENANT_ID` | Azure AD tenant |
+| `AZURE_SUBSCRIPTION_ID` | Target subscription |
+| `ADLS_STORAGE_ACCOUNT` | Storage account holding the `config` container (name carries a random suffix — update after re-pinning to a new trial) |
+
+### How the secretless Azure login works
+
+1. The workflow requests a short-lived **OIDC token** from GitHub
+   (`permissions: id-token: write`).
+2. Azure AD has a **federated credential** on the app that trusts
+   `repo:<owner>/<repo>:ref:refs/heads/main` from GitHub's issuer — so the token
+   is accepted **only** for this repo's `main` branch.
+3. The app's service principal holds **Storage Blob Data Contributor scoped to
+   the `config` container only** — it cannot touch the `raw` data zone.
+
+Nothing long-lived is stored, so there is no Azure credential to leak or rotate.
+Re-create with `az ad app create` + `az ad app federated-credential create` when
+rebuilding on a fresh trial (then update `AZURE_CLIENT_ID` /
+`ADLS_STORAGE_ACCOUNT`).
 
 > All six Snowflake secrets are set deliberately, even though
 > `profiles.example.yml` has defaults like `env_var('SNOWFLAKE_ROLE',

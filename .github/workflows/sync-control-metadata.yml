@@ -1,0 +1,60 @@
+name: Sync control metadata
+
+# ADF reads sources.json from the ADLS "config" container, not from git.
+# Without this workflow the two can drift silently: someone edits the JSON in
+# the repo, forgets to upload it, and the pipeline keeps running the old config.
+# On merge to main we push the file to ADLS, so the repo is the single source
+# of truth.
+on:
+  push:
+    branches: [main]
+    paths: ["ingestion/control/sources.json"]
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write # required to request the OIDC token for Azure login
+  contents: read
+
+jobs:
+  sync-sources-json:
+    name: sync-sources-json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Check whether Azure is configured
+        id: check
+        env:
+          CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ACCOUNT: ${{ vars.ADLS_STORAGE_ACCOUNT }}
+        run: |
+          if [ -n "$CLIENT_ID" ] && [ -n "$ACCOUNT" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Azure not configured (AZURE_CLIENT_ID / ADLS_STORAGE_ACCOUNT missing) -- skipping."
+          fi
+
+      # Secretless: GitHub mints a short-lived OIDC token; Azure trusts it only
+      # for this repo's main branch (federated credential). No stored password.
+      - name: Azure login (OIDC)
+        if: steps.check.outputs.run == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload sources.json to the config container
+        if: steps.check.outputs.run == 'true'
+        run: |
+          az storage blob upload \
+            --account-name "${{ vars.ADLS_STORAGE_ACCOUNT }}" \
+            --container-name config \
+            --name sources.json \
+            --file ingestion/control/sources.json \
+            --auth-mode login \
+            --overwrite \
+            --no-progress
+          echo "sources.json synced to the ADLS config container."
