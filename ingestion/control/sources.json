@@ -17,6 +17,23 @@
       "incremental_strategy": "full_snapshot",
       "date_window_days": 93,
       "notes": "Keyless. Range endpoint limited to ~93 days per request; backfill in windows."
+    },
+    {
+      "source_id": "nbp_history",
+      "enabled": true,
+      "description": "One-off NBP Table A backfill (2026-04-20..2026-07-17) so the marts have a real time series.",
+      "base_url": "https://api.nbp.pl/api/exchangerates/tables/A/2026-04-20/2026-07-17/",
+      "auth_type": "none",
+      "secret_name": null,
+      "http_method": "GET",
+      "response_format": "json",
+      "frequency": "once",
+      "landing_container": "raw",
+      "landing_path_template": "source=nbp/dataset=fx_rates_table_a/ingest_date={ingest_date}",
+      "file_name_template": "nbp_table_a_backfill_2026-04-20_2026-07-17.json",
+      "incremental_strategy": "full_snapshot",
+      "date_window_days": 93,
+      "notes": "Range endpoint returns one document per business day. Set enabled=false once it has run; kept as a record of the backfill."
     }
   ]
 }
