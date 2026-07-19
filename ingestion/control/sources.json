@@ -20,7 +20,7 @@
     },
     {
       "source_id": "nbp_history",
-      "enabled": true,
+      "enabled": false,
       "description": "One-off NBP Table A backfill (2026-04-20..2026-07-17) so the marts have a real time series.",
       "base_url": "https://api.nbp.pl/api/exchangerates/tables/A/2026-04-20/2026-07-17/",
       "auth_type": "none",
