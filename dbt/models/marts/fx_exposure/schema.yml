@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: fct_fx_rates
+    description: >
+      Daily NBP average FX rates (PLN per 1 unit of the currency) with
+      day-over-day movement. Grain: one row per (rate_date, currency_code).
+    columns:
+      - name: fx_rate_key
+        description: Surrogate key over (rate_date, currency_code).
+        tests:
+          - unique
+          - not_null
+      - name: rate_date
+        description: Date the rate is effective for.
+        tests:
+          - not_null
+      - name: currency_code
+        description: ISO 4217 currency code.
+        tests:
+          - not_null
+      - name: mid_rate
+        description: NBP average (mid) rate — PLN per 1 unit. Decimal, not float.
+        tests:
+          - not_null
+      - name: prev_mid_rate
+        description: Previous business day's mid_rate for this currency (LAG). Null on the first day.
+      - name: change_abs
+        description: mid_rate minus prev_mid_rate (PLN).
+      - name: change_pct
+        description: Percentage change vs the previous business day.
