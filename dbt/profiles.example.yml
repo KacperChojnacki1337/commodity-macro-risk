@@ -6,7 +6,7 @@
 #   SNOWFLAKE_ACCOUNT    e.g. MYORG-WT82864
 #   SNOWFLAKE_USER       your Snowflake login name
 #   SNOWFLAKE_PASSWORD   secret — set as an environment variable only
-#   SNOWFLAKE_ROLE       defaults to ACCOUNTADMIN (until ROLE_LOADER exists, #10)
+#   SNOWFLAKE_ROLE       defaults to ROLE_LOADER (least-privilege write role, #10)
 #   SNOWFLAKE_WAREHOUSE  defaults to WH_XS_ELT
 #   SNOWFLAKE_DATABASE   defaults to COMMODITY_RISK
 #
@@ -22,7 +22,7 @@ commodity_risk:
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ROLE_LOADER') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'WH_XS_ELT') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE', 'COMMODITY_RISK') }}"
       schema: STAGING
