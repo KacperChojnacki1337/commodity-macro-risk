@@ -7,7 +7,8 @@ GitHub Actions that guard `main`. Each `.yml` here is an independent workflow.
 | File | Trigger | What it does | Needs secrets? |
 |------|---------|--------------|----------------|
 | `ci.yml` | every PR to `main` + push to `main` | `validate-sources` (sources.json valid + required shape) and `terraform` (fmt-check + validate for dev & prod) | no |
-| `dbt-ci.yml` | PR/push touching `dbt/**` (+ manual) | Builds the dbt project against the **dev** target. Skips cleanly if the dbt project or the Snowflake secrets are missing. | yes (Snowflake) |
+| `dbt-ci.yml` | **PR** touching `dbt/**` (+ manual) | Builds the dbt project against the **dev** target (the zero-copy clone) — tests changes before merge. Skips cleanly if the dbt project or Snowflake secrets are missing. | yes (Snowflake) |
+| `dbt-deploy-prod.yml` | **push to `main`** touching `dbt/**` (+ manual) | Deploys the models to **prod** (`dbt build --target prod`). The other half of the loop: PR tests on the dev clone, merge deploys to prod. Skips cleanly if secrets absent. | yes (Snowflake) |
 | `sync-control-metadata.yml` | push to `main` touching `ingestion/control/sources.json` (+ manual) | Uploads `sources.json` to the ADLS `config` container, so ADF executes what the repo says. Skips cleanly if Azure isn't configured. | **no** — OIDC |
 
 `ci.yml` needs no cloud access — Terraform `validate` and JSON checks run

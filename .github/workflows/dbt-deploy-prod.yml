@@ -1,39 +1,40 @@
-name: dbt CI
+name: dbt deploy (prod)
 
-# PR-only test: builds the dbt project against the DEV target (the zero-copy
-# clone) so changes are validated before merge. Deploying to prod on merge is a
-# separate workflow (dbt-deploy-prod.yml). Skips cleanly when Snowflake secrets
-# are absent (so the repo stays green when no warehouse is attached).
+# Closes the CI/CD loop: PR builds test on the dev clone (dbt-ci.yml); merging to
+# main deploys the same models to PROD, so production always reflects main.
+# Runs `dbt build --target prod` (database COMMODITY_RISK) on push to main.
 on:
-  pull_request:
+  push:
     branches: [main]
     paths: ["dbt/**"]
   workflow_dispatch: {}
+
+# Never run two prod deploys at once.
+concurrency:
+  group: dbt-deploy-prod
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  dbt-build:
-    name: dbt-build
+  dbt-deploy-prod:
+    name: dbt-deploy-prod
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Detect dbt project and Snowflake secrets
+      - name: Check whether Snowflake is configured
         id: check
         env:
           ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
         run: |
-          if [ ! -f dbt/dbt_project.yml ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "No dbt project (dbt/dbt_project.yml missing) -- skipping."
-          elif [ -z "$ACCOUNT" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Snowflake secrets not configured -- skipping dbt build."
-          else
+          if [ -f dbt/dbt_project.yml ] && [ -n "$ACCOUNT" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Snowflake not configured (or no dbt project) -- skipping prod deploy."
           fi
 
       - name: Set up Python
@@ -46,15 +47,13 @@ jobs:
         if: steps.check.outputs.run == 'true'
         run: pip install dbt-snowflake
 
-      # profiles.yml is gitignored (local convenience); the committed template
-      # is credential-free, so CI just materializes it and injects secrets as
-      # environment variables.
       - name: Materialize profiles.yml from the template
         if: steps.check.outputs.run == 'true'
         working-directory: dbt
         run: cp profiles.example.yml profiles.yml
 
-      - name: dbt build (dev target)
+      # Same models, PROD target (database COMMODITY_RISK) — this is the deploy.
+      - name: dbt build (prod target)
         if: steps.check.outputs.run == 'true'
         working-directory: dbt
         env:
@@ -63,5 +62,4 @@ jobs:
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-        run: dbt build --profiles-dir . --target dev
+        run: dbt build --profiles-dir . --target prod
