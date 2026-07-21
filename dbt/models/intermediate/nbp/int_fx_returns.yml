@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: int_fx_returns
+    description: >
+      Per-currency FX analytics (returns, moving averages, rolling volatility).
+      Grain: one row per (rate_date, currency_code). Intermediate building block
+      for the FX marts — not consumed directly by BI.
+    columns:
+      - name: rate_date
+        tests: [not_null]
+      - name: currency_code
+        tests: [not_null]
+      - name: mid_rate
+        description: NBP mid rate (PLN per 1 unit).
+        tests: [not_null]
+      - name: daily_return
+        description: mid_rate / prev_mid_rate - 1 (null on a currency's first day).
+      - name: ma_7d
+        description: 7-day moving average of mid_rate.
+      - name: ma_30d
+        description: 30-day moving average of mid_rate.
+      - name: volatility_30d
+        description: 30-day rolling standard deviation of daily returns (risk measure).
