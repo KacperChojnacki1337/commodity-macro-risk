@@ -1,31 +1,74 @@
 version: 2
 
 models:
+  - name: dim_date
+    description: "Calendar dimension, one row per day. Conformed across all facts."
+    columns:
+      - name: date_key
+        description: Integer surrogate key (YYYYMMDD).
+        tests: [unique, not_null]
+      - name: full_date
+        tests: [not_null]
+      - name: is_weekday
+        description: True Mon-Fri, false on weekends.
+
+  - name: dim_currency
+    description: "Currency dimension, one row per NBP-quoted currency."
+    columns:
+      - name: currency_code
+        description: ISO 4217 code; natural key referenced by the facts.
+        tests: [unique, not_null]
+      - name: is_major
+        description: True for the main exposure currencies (USD, EUR, GBP, ...).
+
   - name: fct_fx_rates
     description: >
-      Daily NBP average FX rates (PLN per 1 unit of the currency) with
-      day-over-day movement. Grain: one row per (rate_date, currency_code).
+      Daily FX fact: mid rate, day-over-day movement, moving averages, rolling
+      volatility. Grain: one row per (rate_date, currency_code).
     columns:
       - name: fx_rate_key
-        description: Surrogate key over (rate_date, currency_code).
-        tests:
-          - unique
-          - not_null
-      - name: rate_date
-        description: Date the rate is effective for.
+        tests: [unique, not_null]
+      - name: date_key
+        description: FK to dim_date.
         tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
       - name: currency_code
-        description: ISO 4217 currency code.
+        description: FK to dim_currency.
         tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_currency')
+                field: currency_code
       - name: mid_rate
-        description: NBP average (mid) rate — PLN per 1 unit. Decimal, not float.
+        tests: [not_null]
+      - name: volatility_30d
+        description: 30-day rolling stddev of daily returns (risk measure).
+
+  - name: fct_fx_cross_rates
+    description: >
+      Cross rates derived from NBP: each currency expressed in PLN, USD and EUR.
+      Grain: one row per (rate_date, currency_code).
+    columns:
+      - name: date_key
         tests:
           - not_null
-      - name: prev_mid_rate
-        description: Previous business day's mid_rate for this currency (LAG). Null on the first day.
-      - name: change_abs
-        description: mid_rate minus prev_mid_rate (PLN).
-      - name: change_pct
-        description: Percentage change vs the previous business day.
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: currency_code
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_currency')
+                field: currency_code
+      - name: usd_per_unit
+        description: This currency expressed in USD (via the USD/PLN anchor).
+      - name: eur_per_unit
+        description: This currency expressed in EUR (via the EUR/PLN anchor).

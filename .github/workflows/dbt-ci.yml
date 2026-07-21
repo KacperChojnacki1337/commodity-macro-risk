@@ -64,4 +64,6 @@ jobs:
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-        run: dbt build --profiles-dir . --target dev
+        run: |
+          dbt deps
+          dbt build --profiles-dir . --target dev
