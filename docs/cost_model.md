@@ -22,6 +22,25 @@
 3. **Reproducible from code.** Snowflake DDL + dbt + Terraform mean the whole
    thing can be rebuilt on a fresh trial after teardown.
 
+## Zero-copy clone (dev environment) — near-zero storage
+
+`COMMODITY_RISK_DEV` is a **zero-copy clone** of prod (`snowflake/06_zero_copy_clone.sql`).
+
+- **Creation is instant and copies no data** — the clone is metadata pointing at
+  the same immutable micro-partitions as prod (a whole database cloned in ~5s).
+- **Storage cost starts at ~0** and grows only by **copy-on-write**: when dev
+  data diverges from prod, only the changed micro-partitions consume new
+  storage. Unchanged data stays shared.
+- **Refresh flow:** re-run `06_zero_copy_clone.sql`. `CREATE OR REPLACE DATABASE
+  ... CLONE` drops the drifted clone and makes a fresh one from current prod —
+  again instant, reclaiming any diverged storage.
+- **Cost control:** don't let the dev clone drift far from prod; re-clone
+  instead of accumulating changes. Drop it entirely when idle
+  (`DROP DATABASE COMMODITY_RISK_DEV`).
+
+> Note: cloning requires the clone's grants to be re-applied (clones do not
+> inherit the source's privileges) — the script handles this.
+
 ## Teardown runbook
 
 1. `cd infra/envs/dev && terraform destroy` (and `prod` if provisioned).
