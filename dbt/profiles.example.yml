@@ -8,11 +8,16 @@
 #   SNOWFLAKE_PASSWORD   secret — set as an environment variable only
 #   SNOWFLAKE_ROLE       defaults to ROLE_LOADER (least-privilege write role, #10)
 #   SNOWFLAKE_WAREHOUSE  defaults to WH_XS_ELT
-#   SNOWFLAKE_DATABASE   defaults to COMMODITY_RISK
 #
 # In CI these come from GitHub Actions secrets (see .github/workflows/README.md).
 #
-# Run dbt with:  dbt build --profiles-dir .
+# Two targets share one connection and differ only by DATABASE:
+#   dev  -> COMMODITY_RISK_DEV  (a zero-copy clone of prod; see snowflake/06_*)
+#   prod -> COMMODITY_RISK
+# The database is NOT a secret, so it is hard-coded per target (not env_var).
+#
+# Run dbt with:  dbt build --profiles-dir .            (default target: dev)
+#                dbt build --profiles-dir . -t prod    (production)
 
 commodity_risk:
   target: dev
@@ -24,7 +29,19 @@ commodity_risk:
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'ROLE_LOADER') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'WH_XS_ELT') }}"
-      database: "{{ env_var('SNOWFLAKE_DATABASE', 'COMMODITY_RISK') }}"
+      database: COMMODITY_RISK_DEV
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: false
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ROLE_LOADER') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'WH_XS_ELT') }}"
+      database: COMMODITY_RISK
       schema: STAGING
       threads: 4
       client_session_keep_alive: false
