@@ -41,10 +41,38 @@
 > Note: cloning requires the clone's grants to be re-applied (clones do not
 > inherit the source's privileges) — the script handles this.
 
+## Cost controls (measured)
+
+**Warehouse `WH_XS_ELT`** — X-Small (the smallest tier, ~1 credit/hour) with
+`AUTO_SUSPEND = 60s` and `AUTO_RESUME`. You pay only for seconds of real query
+time; nothing while idle.
+
+**Resource monitor `rm_commodity_risk`** (`snowflake/07_resource_monitor.sql`)
+caps account credit use at **20 credits/month** and acts as a circuit breaker:
+NOTIFY at 75% / 90%, SUSPEND at 100%, SUSPEND_IMMEDIATE at 110%. A runaway query
+loop therefore cannot burn the trial budget.
+
+**Real usage so far (whole project, ~30 days):**
+
+| Metric | Value |
+|--------|-------|
+| Snowflake credits consumed (30d) | **~2.3 credits** total (≈ a few USD) |
+| `COMMODITY_RISK` storage | **~0.3 MB** |
+| Dev clone `COMMODITY_RISK_DEV` extra storage | **~0** (zero-copy; shares micro-partitions) |
+| Monthly credit cap (resource monitor) | 20 credits |
+
+At X-Small (~1 credit/hour), 2.3 credits across a month means compute is
+effectively free; storage at ~0.3 MB is a rounding error against Snowflake's
+~$23-40/TB/month. The 20-credit cap is ~10x headroom over real use — purely a
+safety net.
+
+_Azure trial has expired (subscription read-only, zero cost); Azure resources
+are being decommissioned automatically. Rebuild from Terraform on a fresh trial._
+
 ## Teardown runbook
 
 1. `cd infra/envs/dev && terraform destroy` (and `prod` if provisioned).
 2. In Snowflake: suspend/drop the warehouse; optionally drop the database.
 3. Confirm no lingering Azure resource groups incur cost.
-
-_To be expanded with real numbers once resources are provisioned (M1)._
+4. In Snowflake, `DROP DATABASE COMMODITY_RISK_DEV` (the clone) when idle; the
+   resource monitor keeps compute capped regardless.

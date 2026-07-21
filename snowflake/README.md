@@ -19,6 +19,7 @@ the dbt **staging** layer (SQL models that clean data already in Snowflake).
 | `03_bronze_tables.sql` | BRONZE landing table (VARIANT + load metadata) and `COPY INTO` for NBP. | |
 | `04_streams_tasks.sql` | Native incremental (CDC) demo: a `STREAM` on the bronze table + a scheduled `TASK` that flattens only the delta into a working table (`nbp_fx_rates_flat`). | Complements dbt; does not replace it. The task runs only `WHEN SYSTEM$STREAM_HAS_DATA` (zero cost when idle). `ALTER TASK ... SUSPEND` to stop scheduling. |
 | `06_zero_copy_clone.sql` | Creates `COMMODITY_RISK_DEV`, a **zero-copy clone** of prod, and re-applies the RBAC grants. dbt's `dev` target builds here; `prod` target is the original. | Instant, ~0 storage (copy-on-write). **Refresh = re-run** (`CREATE OR REPLACE ... CLONE`). CI's `dbt build --target dev` needs this clone to exist. (05 is reserved for a future Snowpipe demo.) |
+| `07_resource_monitor.sql` | Cost controls: enforces the X-Small / auto-suspend warehouse and adds a **resource monitor** (`rm_commodity_risk`, 20 credits/month) that auto-suspends on overspend. | Requires ACCOUNTADMIN. Real usage + rationale in [../docs/cost_model.md](../docs/cost_model.md). |
 
 ## Azure handshake (between PART 1 and PART 2 of `02`)
 
