@@ -7,9 +7,15 @@ variable "budget_name" {
 }
 
 variable "monthly_budget_amount" {
-  description = "Monthly budget, in the subscription's billing currency. Our measured usage is a fraction of this — it is a safety net, not a forecast."
+  description = <<-EOT
+    Monthly budget, in the subscription's billing currency (EUR here).
+    Deliberately small: measured usage is ~0.1-0.3/month (ADF activity runs plus
+    a few MB in ADLS), and ~0 when dev is destroyed between sessions. At 2 the
+    alerts fire at 1.00 / 1.60 / 2.00 — roughly 5x expected spend, so a runaway
+    workload is caught early instead of after the damage.
+  EOT
   type        = number
-  default     = 20
+  default     = 2
 
   validation {
     condition     = var.monthly_budget_amount > 0
