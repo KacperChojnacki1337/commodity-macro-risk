@@ -29,10 +29,13 @@ resource "azurerm_consumption_budget_subscription" "monthly" {
   dynamic "notification" {
     for_each = var.budget_alert_thresholds
     content {
-      enabled       = true
-      threshold     = notification.value
-      operator      = "GreaterThan"
-      contact_roles = ["Owner"]
+      enabled   = true
+      threshold = notification.value
+      operator  = "GreaterThan"
+      # Owner role is the always-on channel; extra addresses come from
+      # terraform.tfvars (gitignored) so no personal email lands in the repo.
+      contact_roles  = ["Owner"]
+      contact_emails = var.budget_contact_emails
     }
   }
 }

@@ -34,6 +34,16 @@ variable "budget_start_date" {
   }
 }
 
+variable "budget_contact_emails" {
+  description = <<-EOT
+    Extra addresses notified on budget thresholds, on top of the Owner role.
+    Set these in terraform.tfvars (gitignored) — never commit a personal address
+    to this public repository. Leave empty to rely on the Owner role alone.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
 variable "budget_alert_thresholds" {
   description = "Percent-of-budget thresholds that trigger a notification to the Owner role."
   type        = list(number)
