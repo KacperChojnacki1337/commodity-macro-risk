@@ -63,12 +63,13 @@ jobs:
       - name: terraform fmt (check only)
         run: terraform -chdir=infra fmt -check -recursive
 
-      - name: Validate each environment
+      # Every root module: the two environments plus the subscription-scoped one.
+      - name: Validate each root module
         run: |
           set -e
-          for env in dev prod; do
-            echo "::group::validate $env"
-            terraform -chdir="infra/envs/$env" init -backend=false -input=false
-            terraform -chdir="infra/envs/$env" validate
+          for root in envs/dev envs/prod subscription; do
+            echo "::group::validate $root"
+            terraform -chdir="infra/$root" init -backend=false -input=false
+            terraform -chdir="infra/$root" validate
             echo "::endgroup::"
           done
