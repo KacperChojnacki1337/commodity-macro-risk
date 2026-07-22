@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+# Defaults work without this file; it exists so personal data stays out of git.
+
+# Addresses notified at each budget threshold, in addition to the Owner role.
+# budget_contact_emails = ["you@example.com"]
+
+# Monthly cap in the subscription's billing currency (EUR here).
+# monthly_budget_amount = 2
+
+# Percent thresholds that trigger a notification.
+# budget_alert_thresholds = [50, 80, 100]

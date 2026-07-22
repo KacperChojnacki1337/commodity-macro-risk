@@ -48,9 +48,13 @@
 time; nothing while idle.
 
 **Resource monitor `rm_commodity_risk`** (`snowflake/07_resource_monitor.sql`)
-caps account credit use at **20 credits/month** and acts as a circuit breaker:
-NOTIFY at 75% / 90%, SUSPEND at 100%, SUSPEND_IMMEDIATE at 110%. A runaway query
-loop therefore cannot burn the trial budget.
+caps account credit use at **8 credits/month** and acts as a circuit breaker:
+NOTIFY at 75% (6 credits) / 90%, SUSPEND at 100%, SUSPEND_IMMEDIATE at 110%.
+Sized at ~3x measured usage so the first alert is a real signal, not noise — a
+runaway query loop is stopped long before it matters.
+
+> Thresholds are set relative to **measured** usage, not guessed. An alert that
+> only fires at many times the normal spend is not a safety net.
 
 **Real usage so far (whole project, ~30 days):**
 
@@ -59,7 +63,8 @@ loop therefore cannot burn the trial budget.
 | Snowflake credits consumed (30d) | **~2.3 credits** total (≈ a few USD) |
 | `COMMODITY_RISK` storage | **~0.3 MB** |
 | Dev clone `COMMODITY_RISK_DEV` extra storage | **~0** (zero-copy; shares micro-partitions) |
-| Monthly credit cap (resource monitor) | 20 credits |
+| Monthly credit cap (resource monitor) | 8 credits (SUSPENDs at 100%) |
+| Azure monthly budget | 2 EUR (alerts only, at 50/80/100%) |
 
 At X-Small (~1 credit/hour), 2.3 credits across a month means compute is
 effectively free; storage at ~0.3 MB is a rounding error against Snowflake's

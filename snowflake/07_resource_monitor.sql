@@ -13,11 +13,14 @@ ALTER WAREHOUSE WH_XS_ELT SET
     AUTO_RESUME    = TRUE;
 
 -- Suspenders: a credit ceiling for the whole account, per month.
--- X-Small burns ~1 credit/hour, so 20 credits/month is far above our sporadic
--- use — but the monitor SUSPENDS at 100%, so accidental overspend is impossible.
+--
+-- Sizing: measured usage is ~2.3 credits/month (X-Small burns ~1 credit/hour and
+-- our queries are seconds long). A quota of 8 gives ~3-4x headroom, so the
+-- NOTIFY at 75% (6 credits) is a meaningful early warning rather than noise —
+-- while still leaving room to work before the hard SUSPEND at 8.
 CREATE OR REPLACE RESOURCE MONITOR rm_commodity_risk
     WITH
-        CREDIT_QUOTA    = 20
+        CREDIT_QUOTA    = 8
         FREQUENCY       = MONTHLY
         START_TIMESTAMP = IMMEDIATELY
     TRIGGERS
