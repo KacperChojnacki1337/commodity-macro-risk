@@ -81,3 +81,21 @@ resource "azurerm_role_assignment" "adf_blob" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = module.adf.identity_principal_id
 }
+
+# The Key Vault is RBAC-authorized, so owning the resource grants NO access to
+# the secrets inside (management plane != data plane). Two grants are needed:
+
+# 1) ADF reads API keys at runtime (e.g. the EIA key) to call authenticated APIs.
+resource "azurerm_role_assignment" "adf_kv_secrets" {
+  scope                = module.keyvault.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = module.adf.identity_principal_id
+}
+
+# 2) Whoever runs Terraform manages the secrets (stores the API keys). Resolved
+#    from the current credential, so no personal object ID is hard-coded here.
+resource "azurerm_role_assignment" "operator_kv_secrets" {
+  scope                = module.keyvault.key_vault_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
