@@ -8,19 +8,29 @@ Infrastructure as Code for the Azure side of the platform: **ADLS Gen2**
 
 ```
 infra/
-  modules/            # reusable building blocks (child modules)
+  modules/            # reusable building blocks (child modules) — never applied directly
     adls/             # ADLS Gen2 storage account + containers
     keyvault/         # Key Vault (RBAC-authorized)
     adf/              # Data Factory with a system-assigned identity
     platform/         # composition: resource group + the three modules above
-  envs/               # environments (root modules) — thin, config only
+  envs/               # ROOT modules, per environment
     dev/              # calls modules/platform with dev values
     prod/             # calls modules/platform with prod values
+  subscription/       # ROOT module, account-wide resources (monthly budget)
 ```
 
-The real logic lives in `modules/`. Each environment is a thin root module that
-calls `modules/platform` with different variable values. dev vs prod are
-**separate state + separate resources**, not git branches.
+**Root modules are split by scope**, each with its own state and lifecycle:
+
+| Root | Manages | Apply when |
+|------|---------|------------|
+| `envs/dev` | the dev environment (RG, ADLS, Key Vault, ADF) | working on dev; `destroy` between sessions |
+| `envs/prod` | the prod environment | promoting to prod |
+| `subscription` | the whole Azure account (budget/cost guard) | once; independent of environments |
+
+That separation is deliberate: routinely running `terraform destroy` on `envs/dev`
+must not remove the account-wide cost guard. The real logic lives in `modules/`;
+roots are thin and config-only. dev vs prod are **separate state + separate
+resources**, not git branches.
 
 ## Prerequisites
 

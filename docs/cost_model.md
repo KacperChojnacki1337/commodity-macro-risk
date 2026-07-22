@@ -66,8 +66,21 @@ effectively free; storage at ~0.3 MB is a rounding error against Snowflake's
 ~$23-40/TB/month. The 20-credit cap is ~10x headroom over real use — purely a
 safety net.
 
-_Azure trial has expired (subscription read-only, zero cost); Azure resources
-are being decommissioned automatically. Rebuild from Terraform on a fresh trial._
+**Azure is now Pay-As-You-Go** (the free trial expired and was upgraded, keeping
+the same subscription and resources). Real charges apply, but the footprint is
+tiny: ADLS holds a few MB, ADF bills per pipeline run (a handful per day), Key
+Vault operations are within the free allowance.
+
+A **subscription budget** (`infra/subscription/`) notifies the Owner at
+**50% / 80% / 100%** of a monthly cap. Note the difference from Snowflake:
+
+| Guard | Behaviour |
+|-------|-----------|
+| Snowflake resource monitor | **suspends** the warehouse at 100% — a hard brake |
+| Azure budget | **notifies only** — an early warning, not a cut-off |
+
+So the actual brake on Azure is the habit of `terraform destroy` on `envs/dev`
+between sessions. The budget exists to catch the case where that is forgotten.
 
 ## Teardown runbook
 
