@@ -4,7 +4,7 @@
     {
       "source_id": "nbp",
       "enabled": true,
-      "description": "National Bank of Poland \u00e2\u20ac\u201d daily FX mid rates (USD/PLN, EUR/PLN).",
+      "description": "National Bank of Poland - daily FX mid rates (USD/PLN, EUR/PLN).",
       "base_url": "https://api.nbp.pl/api/exchangerates/tables/A",
       "auth_type": "none",
       "secret_name": null,
@@ -38,7 +38,7 @@
     {
       "source_id": "eia_wti_spot",
       "enabled": true,
-      "description": "EIA \u00e2\u20ac\u201d WTI crude oil spot price, Cushing OK (series RWTC), daily, USD per barrel.",
+      "description": "EIA - WTI crude oil spot price, Cushing OK (series RWTC), daily, USD per barrel.",
       "base_url": "https://api.eia.gov/v2/petroleum/pri/spt/data/?frequency=daily&data[0]=value&facets[series][]=RWTC&start=2026-04-01&sort[0][column]=period&sort[0][direction]=asc&length=5000",
       "auth_type": "api_key",
       "secret_name": "eia-api-key",
@@ -50,7 +50,7 @@
       "file_name_template": "eia_wti_spot_{ingest_date}.json",
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
-      "notes": "First api_key source. The key is NOT here \u00e2\u20ac\u201d only secret_name, resolved from Key Vault at runtime by ADF's managed identity and appended as &api_key=. Enable once the ADF api_key branch exists."
+      "notes": "First api_key source. The key is NOT here - only secret_name, resolved from Key Vault at runtime by ADF's managed identity and appended as &api_key=."
     }
   ]
 }

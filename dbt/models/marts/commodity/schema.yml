@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: fct_commodity_prices
+    description: >
+      Daily commodity spot prices with day-over-day movement.
+      Grain: one row per (price_date, series). Price in the source's units
+      (USD/barrel for WTI).
+    columns:
+      - name: price_key
+        tests: [unique, not_null]
+      - name: date_key
+        description: FK to dim_date.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: series
+        tests: [not_null]
+      - name: price
+        tests: [not_null]
+      - name: change_pct
+        description: Percentage change vs the previous trading day.
