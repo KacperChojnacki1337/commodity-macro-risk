@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: fct_weather_daily
+    description: >
+      Daily weather (Warsaw) for the demand-signals domain, with heating degree
+      days as a heating-demand proxy. Grain: one row per (weather_date, location).
+    columns:
+      - name: weather_key
+        description: Surrogate key over (weather_date, latitude, longitude). Primary key.
+        tests: [unique, not_null]
+      - name: date_key
+        description: FK to dim_date.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: weather_date
+        description: The day the weather is for.
+        tests: [not_null]
+      - name: temp_max_c
+        description: Daily maximum temperature (C).
+        tests: [not_null]
+      - name: temp_min_c
+        description: Daily minimum temperature (C).
+      - name: temp_avg_c
+        description: Mean of daily max and min (C).
+      - name: precip_mm
+        description: Daily precipitation total (mm).
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: heating_degree_days
+        description: max(0, 18 - temp_avg_c). Proxy for heating (fuel) demand.
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: is_rainy
+        description: True when precipitation > 0.

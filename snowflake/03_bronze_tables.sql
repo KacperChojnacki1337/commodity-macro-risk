@@ -78,3 +78,30 @@ SELECT d.value:series::string      AS series,
 FROM EIA_PETROLEUM_SPOT_RAW,
      LATERAL FLATTEN(input => raw:response:data) d
 GROUP BY series;
+
+-- ---------------------------------------------------------------------------
+-- Open-Meteo daily weather (keyless, #22). The document stores PARALLEL arrays
+-- under raw:daily (time[i] matches temperature_2m_max[i]); staging zips them.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS OPENMETEO_WEATHER_RAW (
+    raw        VARIANT,
+    _src_file  STRING,
+    _loaded_at TIMESTAMP_NTZ
+);
+
+COPY INTO OPENMETEO_WEATHER_RAW (raw, _src_file, _loaded_at)
+FROM (
+    SELECT $1,
+           METADATA$FILENAME,
+           CURRENT_TIMESTAMP()
+    FROM @stg_adls_raw
+)
+FILE_FORMAT = (FORMAT_NAME = 'ff_json')
+PATTERN     = '.*openmeteo_.*[.]json'
+ON_ERROR    = 'ABORT_STATEMENT';
+
+-- Verify: how many days landed and the temperature range.
+SELECT ARRAY_SIZE(raw:daily:time)                          AS n_days,
+       raw:daily:time[0]::date                             AS first_day,
+       raw:daily:temperature_2m_max[0]::float              AS first_temp_max_c
+FROM OPENMETEO_WEATHER_RAW;
