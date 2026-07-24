@@ -34,3 +34,16 @@ sources:
             description: Path of the source file in the ADLS raw zone.
           - name: _loaded_at
             description: Timestamp when COPY INTO loaded the file.
+
+      - name: openmeteo_weather_raw
+        description: >
+          Open-Meteo daily weather as landed: the whole JSON document per file.
+          Measurements are PARALLEL arrays under raw:daily (time[i] matches
+          temperature_2m_max[i]); staging zips them by index.
+        columns:
+          - name: raw
+            description: The untouched Open-Meteo JSON document (VARIANT).
+          - name: _src_file
+            description: Path of the source file in the ADLS raw zone.
+          - name: _loaded_at
+            description: Timestamp when COPY INTO loaded the file.

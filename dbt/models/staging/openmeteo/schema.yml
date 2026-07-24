@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: stg_openmeteo__warsaw_daily
+    description: >
+      Open-Meteo daily weather for Warsaw, one row per (weather_date, location).
+      Parallel measurement arrays zipped by index. Temps in C, precip in mm.
+    columns:
+      - name: weather_key
+        description: Surrogate key over (weather_date, latitude, longitude).
+        tests: [unique, not_null]
+      - name: weather_date
+        tests: [not_null]
+      - name: temp_max_c
+        description: Daily maximum 2m temperature (C).
+        tests: [not_null]
+      - name: temp_min_c
+        description: Daily minimum 2m temperature (C).
+      - name: temp_avg_c
+        description: Mean of daily max and min (C).
+      - name: precip_mm
+        description: Daily precipitation total (mm).

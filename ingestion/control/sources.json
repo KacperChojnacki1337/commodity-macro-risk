@@ -68,6 +68,23 @@
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
       "notes": "Same EIA endpoint and key as WTI, different series (RBRTE). Both flow into the generic EIA_PETROLEUM_SPOT_RAW bronze table and stg_eia__petroleum_spot."
+    },
+    {
+      "source_id": "openmeteo",
+      "enabled": true,
+      "description": "Open-Meteo - daily weather for Warsaw (temp max/min, precipitation). Demand-signals domain.",
+      "base_url": "https://archive-api.open-meteo.com/v1/archive?latitude=52.23&longitude=21.01&start_date=2026-04-01&end_date=2026-07-20&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto",
+      "auth_type": "none",
+      "secret_name": null,
+      "http_method": "GET",
+      "response_format": "json",
+      "frequency": "daily",
+      "landing_container": "raw",
+      "landing_path_template": "source=openmeteo/dataset=warsaw_daily/ingest_date={ingest_date}",
+      "file_name_template": "openmeteo_warsaw_daily_{ingest_date}.json",
+      "incremental_strategy": "full_snapshot",
+      "date_window_days": null,
+      "notes": "Keyless. Archive API returns parallel arrays under 'daily' (time[i] matches temperature_2m_max[i]); staging zips them by index. Archive has a ~5-day lag."
     }
   ]
 }
