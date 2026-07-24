@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_eia__wti_spot
+    description: >
+      EIA WTI crude oil spot price (Cushing OK, series RWTC), typed and deduped.
+      Grain: one row per (price_date, series). Price is USD per barrel.
+    columns:
+      - name: price_key
+        description: Surrogate key over (price_date, series).
+        tests: [unique, not_null]
+      - name: price_date
+        tests: [not_null]
+      - name: series
+        tests: [not_null]
+      - name: price
+        description: WTI spot price, USD per barrel (decimal, not float).
+        tests: [not_null]

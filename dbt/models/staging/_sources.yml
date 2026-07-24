@@ -21,3 +21,15 @@ sources:
             description: Path of the source file in the ADLS raw zone.
           - name: _loaded_at
             description: Timestamp when COPY INTO loaded the file.
+
+      - name: eia_wti_spot_raw
+        description: >
+          EIA WTI crude oil spot price (series RWTC) as landed: the whole JSON
+          document per file; daily rows live under raw:response:data.
+        columns:
+          - name: raw
+            description: The untouched EIA JSON document (VARIANT).
+          - name: _src_file
+            description: Path of the source file in the ADLS raw zone.
+          - name: _loaded_at
+            description: Timestamp when COPY INTO loaded the file.
