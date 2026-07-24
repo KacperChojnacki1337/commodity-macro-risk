@@ -22,10 +22,11 @@ sources:
           - name: _loaded_at
             description: Timestamp when COPY INTO loaded the file.
 
-      - name: eia_wti_spot_raw
+      - name: eia_petroleum_spot_raw
         description: >
-          EIA WTI crude oil spot price (series RWTC) as landed: the whole JSON
-          document per file; daily rows live under raw:response:data.
+          EIA petroleum spot prices (any series: WTI RWTC, Brent RBRTE, ...) as
+          landed: the whole JSON document per file; daily rows live under
+          raw:response:data.
         columns:
           - name: raw
             description: The untouched EIA JSON document (VARIANT).

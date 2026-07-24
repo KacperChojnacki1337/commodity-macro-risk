@@ -48,7 +48,7 @@ Detailed diagram and narrative: [docs/architecture.md](docs/architecture.md).
 |------------|---------------------|-----------------------------------|----------|------------------|------|
 | nbp        | NBP API             | USD/PLN, EUR/PLN FX rates         | none     | daily            | free |
 | eia        | EIA API             | crude / petroleum product prices  | api_key  | daily / weekly   | free |
-| stooq      | stooq.pl            | WTI/Brent futures (CSV)           | none     | daily            | free |
+| ~~stooq~~  | ~~stooq.pl~~        | ~~WTI/Brent futures (CSV)~~       | ~~none~~ | ~~daily~~        | free |
 | worldbank  | World Bank Pink Sheet | global commodity price indices  | none     | monthly          | free |
 | ecb        | ECB SDW             | Euribor / ECB policy rates        | none     | daily / monthly  | free |
 | gus        | GUS BDL API         | PL construction / production      | api_key* | monthly / quarterly | free |
@@ -56,7 +56,13 @@ Detailed diagram and narrative: [docs/architecture.md](docs/architecture.md).
 | openmeteo  | Open-Meteo          | weather (history + forecast, PL)  | none     | daily            | free |
 
 \* GUS BDL works without a key at low rates; a free key raises limits.
-Futures use **stooq.pl** (stable CSV), not Yahoo Finance (no official API).
+
+**Oil benchmarks:** stooq.pl was the original plan for WTI/Brent, but it now
+serves a JavaScript proof-of-work anti-bot challenge instead of CSV, so it is no
+longer scriptable for automated ingestion. We use **EIA** spot prices instead —
+WTI (series `RWTC`) and Brent (`RBRTE`) — via the same api_key source. Free
+reliable *futures* data is not available without a paid provider; spot prices
+are sufficient for the price-risk domain.
 
 ## 5. Naming Conventions
 

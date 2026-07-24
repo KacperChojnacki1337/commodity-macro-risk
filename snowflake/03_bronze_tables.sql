@@ -50,17 +50,17 @@ FROM NBP_FX_RATES_RAW,
 WHERE r.value:code::string IN ('USD', 'EUR');
 
 -- ---------------------------------------------------------------------------
--- EIA WTI crude oil spot price (first api_key source, #15)
--- The whole EIA JSON document lands in a VARIANT; the daily rows live under
--- raw:response:data.
+-- EIA petroleum spot prices (api_key source, #15). One generic table holds any
+-- series (WTI RWTC, Brent RBRTE, ...); the PATTERN matches every EIA spot file,
+-- so adding a series is just a sources.json entry.
 -- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS EIA_WTI_SPOT_RAW (
+CREATE TABLE IF NOT EXISTS EIA_PETROLEUM_SPOT_RAW (
     raw        VARIANT,
     _src_file  STRING,
     _loaded_at TIMESTAMP_NTZ
 );
 
-COPY INTO EIA_WTI_SPOT_RAW (raw, _src_file, _loaded_at)
+COPY INTO EIA_PETROLEUM_SPOT_RAW (raw, _src_file, _loaded_at)
 FROM (
     SELECT $1,
            METADATA$FILENAME,
@@ -68,21 +68,13 @@ FROM (
     FROM @stg_adls_raw
 )
 FILE_FORMAT = (FORMAT_NAME = 'ff_json')
-PATTERN     = '.*eia_wti_spot_.*[.]json'
+PATTERN     = '.*eia_.*_spot_.*[.]json'   -- eia_wti_spot_*, eia_brent_spot_*, ...
 ON_ERROR    = 'ABORT_STATEMENT';
 
--- Verify: how many daily prices landed, and the latest few.
-SELECT COUNT(*) AS bronze_rows FROM EIA_WTI_SPOT_RAW;
-
-SELECT ARRAY_SIZE(raw:response:data) AS n_days,
-       _src_file,
-       _loaded_at
-FROM EIA_WTI_SPOT_RAW;
-
-SELECT d.value:period::date        AS price_date,
-       d.value:series::string      AS series,
-       d.value:value::number(18,6) AS price_usd_bbl
-FROM EIA_WTI_SPOT_RAW,
+-- Verify: which series landed, and the latest price of each.
+SELECT d.value:series::string      AS series,
+       COUNT(*)                    AS n_days,
+       MAX(d.value:period::date)   AS latest_date
+FROM EIA_PETROLEUM_SPOT_RAW,
      LATERAL FLATTEN(input => raw:response:data) d
-ORDER BY price_date DESC
-LIMIT 3;
+GROUP BY series;

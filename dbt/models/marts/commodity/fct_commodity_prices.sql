@@ -10,7 +10,7 @@ with prices as (
         product_name,
         price,
         units
-    from {{ ref('stg_eia__wti_spot') }}
+    from {{ ref('stg_eia__petroleum_spot') }}
 
 ),
 
