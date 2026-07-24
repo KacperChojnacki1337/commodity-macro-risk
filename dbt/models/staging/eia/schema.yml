@@ -1,9 +1,9 @@
 version: 2
 
 models:
-  - name: stg_eia__wti_spot
+  - name: stg_eia__petroleum_spot
     description: >
-      EIA WTI crude oil spot price (Cushing OK, series RWTC), typed and deduped.
+      EIA petroleum spot prices (WTI RWTC, Brent RBRTE, ...), typed and deduped.
       Grain: one row per (price_date, series). Price is USD per barrel.
     columns:
       - name: price_key
@@ -12,7 +12,12 @@ models:
       - name: price_date
         tests: [not_null]
       - name: series
+        description: EIA series code (RWTC = WTI, RBRTE = Brent).
         tests: [not_null]
+      - name: product_name
+        description: Human-readable product name.
       - name: price
-        description: WTI spot price, USD per barrel (decimal, not float).
+        description: Spot price, USD per barrel (decimal, not float).
         tests: [not_null]
+      - name: units
+        description: Price units as reported by EIA.

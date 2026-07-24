@@ -1,10 +1,11 @@
--- EIA WTI crude oil spot price: flatten the raw JSON document's data array into
--- one typed row per (price_date, series). Materialized as a view.
+-- EIA petroleum spot prices (any series: WTI RWTC, Brent RBRTE, ...). Flattens
+-- each raw JSON document's data array into one typed row per (price_date,
+-- series). Adding a new series is a sources.json entry — it flows through here.
 
 with source as (
 
     select raw, _src_file, _loaded_at
-    from {{ source('bronze', 'eia_wti_spot_raw') }}
+    from {{ source('bronze', 'eia_petroleum_spot_raw') }}
 
 ),
 
