@@ -5,12 +5,26 @@ models:
     description: "Calendar dimension, one row per day. Conformed across all facts."
     columns:
       - name: date_key
-        description: Integer surrogate key (YYYYMMDD).
+        description: Integer surrogate key (YYYYMMDD). Primary key.
         tests: [unique, not_null]
       - name: full_date
+        description: The calendar date (DATE).
         tests: [not_null]
+      - name: year
+        description: Calendar year.
+      - name: quarter
+        description: Calendar quarter (1-4).
+      - name: month
+        description: Month number (1-12).
+      - name: month_name
+        description: Month name (e.g. January).
+      - name: day_of_month
+        description: Day of the month (1-31).
+      - name: day_name
+        description: Weekday name (Mon..Sun).
       - name: is_weekday
         description: True Mon-Fri, false on weekends.
+        tests: [not_null]
 
   - name: dim_currency
     description: "Currency dimension, one row per NBP-quoted currency."
@@ -18,8 +32,11 @@ models:
       - name: currency_code
         description: ISO 4217 code; natural key referenced by the facts.
         tests: [unique, not_null]
+      - name: currency_name
+        description: Currency name as published by NBP (Polish).
       - name: is_major
         description: True for the main exposure currencies (USD, EUR, GBP, ...).
+        tests: [not_null]
 
   - name: fct_fx_rates
     description: >
@@ -27,6 +44,7 @@ models:
       volatility. Grain: one row per (rate_date, currency_code).
     columns:
       - name: fx_rate_key
+        description: Surrogate key over (rate_date, currency_code). Primary key.
         tests: [unique, not_null]
       - name: date_key
         description: FK to dim_date.
@@ -37,17 +55,40 @@ models:
                 to: ref('dim_date')
                 field: date_key
       - name: currency_code
-        description: FK to dim_currency.
+        description: FK to dim_currency (ISO 4217).
         tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('dim_currency')
                 field: currency_code
-      - name: mid_rate
+      - name: rate_date
+        description: Date the rate is effective for.
         tests: [not_null]
+      - name: mid_rate
+        description: NBP average (mid) rate, PLN per 1 unit. Decimal, not float.
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: prev_mid_rate
+        description: Previous business day's mid_rate for this currency (null on day 1).
+      - name: change_abs
+        description: mid_rate minus prev_mid_rate (PLN).
+      - name: daily_change_pct
+        description: Percentage change vs the previous business day.
+      - name: ma_7d
+        description: 7-day moving average of mid_rate.
+      - name: ma_30d
+        description: 30-day moving average of mid_rate.
       - name: volatility_30d
-        description: 30-day rolling stddev of daily returns (risk measure).
+        description: 30-day rolling standard deviation of daily returns (risk measure).
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
 
   - name: fct_fx_cross_rates
     description: >
@@ -55,6 +96,7 @@ models:
       Grain: one row per (rate_date, currency_code).
     columns:
       - name: date_key
+        description: FK to dim_date.
         tests:
           - not_null
           - relationships:
@@ -62,12 +104,23 @@ models:
                 to: ref('dim_date')
                 field: date_key
       - name: currency_code
+        description: FK to dim_currency (ISO 4217).
         tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('dim_currency')
                 field: currency_code
+      - name: rate_date
+        description: Date the rate is effective for.
+        tests: [not_null]
+      - name: pln_per_unit
+        description: PLN per 1 unit of the currency (NBP native quote).
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
       - name: usd_per_unit
         description: This currency expressed in USD (via the USD/PLN anchor).
       - name: eur_per_unit
