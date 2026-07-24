@@ -5,11 +5,11 @@
         "factoryName": {
             "value": "adf-cmdrisk-dev-4ym7d"
         },
-        "ls_adls_raw_properties_typeProperties_url": {
-            "value": "https://stcmdriskdev4ym7d.dfs.core.windows.net/"
-        },
         "ls_http_nbp_properties_typeProperties_url": {
             "value": "@{linkedService().baseUrl}"
+        },
+        "ls_adls_raw_properties_typeProperties_url": {
+            "value": "https://stcmdriskdev4ym7d.dfs.core.windows.net/"
         }
     }
 }
