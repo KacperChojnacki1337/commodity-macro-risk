@@ -67,3 +67,5 @@ jobs:
         run: |
           dbt deps
           dbt build --profiles-dir . --target dev
+          # Gate: docs must generate cleanly (catches broken refs / bad yaml).
+          dbt docs generate --profiles-dir . --target dev

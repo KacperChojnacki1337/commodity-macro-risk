@@ -4,10 +4,11 @@ models:
   - name: fct_commodity_prices
     description: >
       Daily commodity spot prices with day-over-day movement.
-      Grain: one row per (price_date, series). Price in the source's units
+      Grain: one row per (price_date, series). Price is in the source's units
       (USD/barrel for WTI).
     columns:
       - name: price_key
+        description: Surrogate key over (price_date, series). Primary key.
         tests: [unique, not_null]
       - name: date_key
         description: FK to dim_date.
@@ -17,9 +18,31 @@ models:
               arguments:
                 to: ref('dim_date')
                 field: date_key
+      - name: price_date
+        description: Trading date the price is for.
+        tests: [not_null]
       - name: series
+        description: EIA series code (e.g. RWTC for WTI Cushing spot).
         tests: [not_null]
+      - name: product_name
+        description: Human-readable product name (e.g. WTI Crude Oil).
       - name: price
-        tests: [not_null]
+        description: Spot price in the source's units. Decimal, not float.
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                inclusive: false
+      - name: units
+        description: Price units as reported by EIA.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["$/BBL"]
+      - name: prev_price
+        description: Previous trading day's price for this series (null on day 1).
+      - name: change_abs
+        description: price minus prev_price.
       - name: change_pct
         description: Percentage change vs the previous trading day.
