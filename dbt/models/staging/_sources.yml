@@ -61,6 +61,18 @@ sources:
           - name: _loaded_at
             description: Timestamp when COPY INTO loaded the file.
 
+      - name: gus_roads_raw
+        description: >
+          GUS BDL expressway/motorway length (annual). VARIANT document with
+          results[] per area, each holding a values[] array of {year, val}.
+        columns:
+          - name: raw
+            description: The untouched GUS BDL JSON document (VARIANT).
+          - name: _src_file
+            description: Path of the source file in the ADLS raw zone.
+          - name: _loaded_at
+            description: Timestamp when COPY INTO loaded the file.
+
       - name: ecb_estr_raw
         description: >
           ECB euro short-term rate. Unlike the others this source is CSV, so the

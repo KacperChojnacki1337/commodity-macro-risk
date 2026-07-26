@@ -166,3 +166,31 @@ FROM EUROSTAT_CIVIL_ENG_RAW,
      LATERAL FLATTEN(input => raw:dimension:time:category:index) t
 ORDER BY period DESC
 LIMIT 3;
+
+-- ---------------------------------------------------------------------------
+-- GUS BDL: expressway/motorway length, annual (#21). VARIANT bronze; the data
+-- is results[] per area, each with a values[] array of {year, val}.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS GUS_ROADS_RAW (
+    raw        VARIANT,
+    _src_file  STRING,
+    _loaded_at TIMESTAMP_NTZ
+);
+
+COPY INTO GUS_ROADS_RAW (raw, _src_file, _loaded_at)
+FROM (
+    SELECT $1, METADATA$FILENAME, CURRENT_TIMESTAMP()
+    FROM @stg_adls_raw
+)
+FILE_FORMAT = (FORMAT_NAME = 'ff_json')
+PATTERN     = '.*gus_expressways_motorways_.*[.]json'
+ON_ERROR    = 'ABORT_STATEMENT';
+
+-- Verify: latest years of motorway/expressway length (km).
+SELECT v.value:year::int  AS year,
+       v.value:val::number(18,1) AS road_km
+FROM GUS_ROADS_RAW,
+     LATERAL FLATTEN(input => raw:results) r,
+     LATERAL FLATTEN(input => r.value:values) v
+ORDER BY year DESC
+LIMIT 3;
