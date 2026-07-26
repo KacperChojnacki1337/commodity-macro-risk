@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_daily_market_signals
+    description: >
+      Cross-domain daily signals reconciled to one grain. Daily (FX, oil, eSTR,
+      weather), monthly (Eurostat) and annual (GUS) series are brought to each
+      day via ASOF JOIN (last-known-value), so there is exactly one row per day
+      and no fan-out. A wide reporting mart on top of the star schema.
+      Grain: one row per market_date.
+    columns:
+      - name: date_key
+        description: FK to dim_date.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: market_date
+        description: The day. Unique — proves no fan-out from the frequency joins.
+        tests: [unique, not_null]
+      - name: usd_pln
+        description: USD/PLN mid rate (last trading day, forward-filled over weekends).
+      - name: eur_pln
+        description: EUR/PLN mid rate.
+      - name: wti_usd_bbl
+        description: WTI crude spot, USD/barrel.
+      - name: brent_usd_bbl
+        description: Brent crude spot, USD/barrel.
+      - name: estr_pct
+        description: ECB euro short-term rate, percent.
+      - name: temp_avg_c
+        description: Warsaw daily mean temperature (C).
+      - name: heating_degree_days
+        description: Heating degree days (base 18C).
+      - name: civil_eng_index
+        description: Eurostat civil engineering production index (monthly, last-known).
+      - name: motorway_km
+        description: GUS expressway + motorway length, km (annual, last-known).
