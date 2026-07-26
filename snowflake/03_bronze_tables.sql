@@ -139,3 +139,30 @@ ON_ERROR    = 'ABORT_STATEMENT';   -- data is clean; ON_ERROR=CONTINUE/SKIP_FILE
 SELECT COUNT(*) AS bronze_rows, MIN(obs_date) AS from_date, MAX(obs_date) AS to_date,
        MAX_BY(obs_value, obs_date) AS latest_rate_pct
 FROM ECB_ESTR_RAW;
+
+-- ---------------------------------------------------------------------------
+-- Eurostat civil engineering production index (JSON-stat, #20). VARIANT bronze;
+-- observations are a flat {index:value} map under raw:value.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS EUROSTAT_CIVIL_ENG_RAW (
+    raw        VARIANT,
+    _src_file  STRING,
+    _loaded_at TIMESTAMP_NTZ
+);
+
+COPY INTO EUROSTAT_CIVIL_ENG_RAW (raw, _src_file, _loaded_at)
+FROM (
+    SELECT $1, METADATA$FILENAME, CURRENT_TIMESTAMP()
+    FROM @stg_adls_raw
+)
+FILE_FORMAT = (FORMAT_NAME = 'ff_json')
+PATTERN     = '.*eurostat_civil_eng_.*[.]json'
+ON_ERROR    = 'ABORT_STATEMENT';
+
+-- Verify: months and the index range (flatten time index, look up value[idx]).
+SELECT t.key::string                              AS period,
+       GET(raw:value, t.value::string)::number(18,4) AS index_value
+FROM EUROSTAT_CIVIL_ENG_RAW,
+     LATERAL FLATTEN(input => raw:dimension:time:category:index) t
+ORDER BY period DESC
+LIMIT 3;
