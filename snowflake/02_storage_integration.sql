@@ -32,6 +32,15 @@ CREATE FILE FORMAT IF NOT EXISTS ff_json
     TYPE = 'JSON'
     COMMENT = 'Generic JSON file format for raw landing';
 
+-- CSV format for sources that serve CSV (e.g. ECB SDMX). Skips the header row
+-- and honours quoted fields (SDMX TITLE_COMPL contains commas inside quotes).
+CREATE FILE FORMAT IF NOT EXISTS ff_csv
+    TYPE = 'CSV'
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+    EMPTY_FIELD_AS_NULL = TRUE
+    COMMENT = 'CSV file format (header skipped, quoted fields) for raw landing';
+
 -- External stage: a pointer to the ADLS raw container via the integration.
 CREATE STAGE IF NOT EXISTS stg_adls_raw
     STORAGE_INTEGRATION = azure_adls_int
