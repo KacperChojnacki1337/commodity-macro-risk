@@ -119,6 +119,23 @@
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
       "notes": "Keyless. JSON-stat: value is a flat {index:value} map; non-time dims are size 1 so the flat index equals the time index. Staging flattens dimension.time.category.index and looks up value[index]. MONTHLY (introduces mixed frequencies vs the daily sources)."
+    },
+    {
+      "source_id": "gus_expressways",
+      "enabled": true,
+      "description": "GUS BDL - length of expressways and motorways in Poland (variable 453823), annual, km. Roads / demand-signals domain.",
+      "base_url": "https://bdl.stat.gov.pl/api/v1/data/by-variable/453823?format=json&unit-level=0&page-size=100",
+      "auth_type": "none",
+      "secret_name": null,
+      "http_method": "GET",
+      "response_format": "json",
+      "frequency": "annual",
+      "landing_container": "raw",
+      "landing_path_template": "source=gus/dataset=expressways_motorways/ingest_date={ingest_date}",
+      "file_name_template": "gus_expressways_motorways_{ingest_date}.json",
+      "incremental_strategy": "full_snapshot",
+      "date_window_days": null,
+      "notes": "Keyless (GUS BDL works without a key at low rates). JSON: results[] per area, each with values[] per year. ANNUAL - adds a third frequency (daily/monthly/annual) for the reconciliation work."
     }
   ]
 }

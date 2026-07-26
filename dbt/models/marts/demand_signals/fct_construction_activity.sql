@@ -16,11 +16,32 @@ with eurostat as (
         'index_2021_100'                       as unit
     from {{ ref('stg_eurostat__civil_eng') }}
 
+),
+
+gus as (
+
+    select
+        period_date,
+        'gus'                                  as source_name,
+        'PL'                                   as geo,
+        'expressway_motorway_length'           as indicator,
+        'annual'                               as frequency,
+        road_km                                as value,
+        'km'                                   as unit
+    from {{ ref('stg_gus__expressways') }}
+    where area = 'POLSKA'
+
+),
+
+combined as (
+    select * from eurostat
+    union all
+    select * from gus
 )
 
 select
     {{ dbt_utils.generate_surrogate_key(['period_date', 'source_name', 'indicator']) }} as activity_key,
-    to_number(to_char(period_date, 'YYYYMMDD')) as date_key,   -- FK -> dim_date (month start)
+    to_number(to_char(period_date, 'YYYYMMDD')) as date_key,   -- FK -> dim_date (period start)
     period_date,
     source_name,
     geo,
@@ -28,4 +49,4 @@ select
     frequency,
     value,
     unit
-from eurostat
+from combined

@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: stg_gus__expressways
+    description: >
+      GUS BDL length of expressways and motorways in Poland, annual (km).
+      Grain: one row per (period_date, area).
+    columns:
+      - name: road_key
+        description: Surrogate key over (period_date, area).
+        tests: [unique, not_null]
+      - name: period_date
+        description: First day of the year the figure is for.
+        tests: [not_null]
+      - name: area
+        tests: [not_null]
+      - name: road_km
+        description: Length of expressways + motorways (km).
+        tests: [not_null]
