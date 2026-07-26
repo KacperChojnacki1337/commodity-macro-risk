@@ -102,6 +102,23 @@
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
       "notes": "Keyless. FIRST CSV source (SDMX wide CSV, header row, quoted fields). Snowflake loads it with a CSV file format (ff_csv), selecting columns by position. Others so far are JSON."
+    },
+    {
+      "source_id": "eurostat_civil_eng",
+      "enabled": true,
+      "description": "Eurostat - civil engineering production index (roads/infrastructure), Poland, monthly, 2021=100. Demand-signals domain.",
+      "base_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/sts_copr_m?format=JSON&geo=PL&nace_r2=F42&s_adj=SCA&unit=I21&sinceTimePeriod=2024-01",
+      "auth_type": "none",
+      "secret_name": null,
+      "http_method": "GET",
+      "response_format": "json",
+      "frequency": "monthly",
+      "landing_container": "raw",
+      "landing_path_template": "source=eurostat/dataset=civil_eng_pl/ingest_date={ingest_date}",
+      "file_name_template": "eurostat_civil_eng_pl_{ingest_date}.json",
+      "incremental_strategy": "full_snapshot",
+      "date_window_days": null,
+      "notes": "Keyless. JSON-stat: value is a flat {index:value} map; non-time dims are size 1 so the flat index equals the time index. Staging flattens dimension.time.category.index and looks up value[index]. MONTHLY (introduces mixed frequencies vs the daily sources)."
     }
   ]
 }

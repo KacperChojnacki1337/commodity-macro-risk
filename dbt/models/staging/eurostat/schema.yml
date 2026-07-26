@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: stg_eurostat__civil_eng
+    description: >
+      Eurostat civil engineering (roads/infrastructure) production index for
+      Poland, monthly (2021=100). Grain: one row per month (period_date).
+    columns:
+      - name: construction_key
+        description: Surrogate key over (period_date, geo, indicator).
+        tests: [unique, not_null]
+      - name: period_date
+        description: First day of the month the index is for.
+        tests: [not_null]
+      - name: geo
+        tests: [not_null]
+      - name: index_value
+        description: Civil engineering production index (2021 = 100).
+        tests: [not_null]
