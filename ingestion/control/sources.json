@@ -85,6 +85,23 @@
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
       "notes": "Keyless. Archive API returns parallel arrays under 'daily' (time[i] matches temperature_2m_max[i]); staging zips them by index. Archive has a ~5-day lag."
+    },
+    {
+      "source_id": "ecb_estr",
+      "enabled": true,
+      "description": "ECB - euro short-term rate (STR), daily, percent. Macro rates domain.",
+      "base_url": "https://data-api.ecb.europa.eu/service/data/EST/B.EU000A2X2A25.WT?format=csvdata&startPeriod=2026-04-01&endPeriod=2026-07-20",
+      "auth_type": "none",
+      "secret_name": null,
+      "http_method": "GET",
+      "response_format": "csv",
+      "landing_container": "raw",
+      "frequency": "daily",
+      "landing_path_template": "source=ecb/dataset=estr/ingest_date={ingest_date}",
+      "file_name_template": "ecb_estr_{ingest_date}.csv",
+      "incremental_strategy": "full_snapshot",
+      "date_window_days": null,
+      "notes": "Keyless. FIRST CSV source (SDMX wide CSV, header row, quoted fields). Snowflake loads it with a CSV file format (ff_csv), selecting columns by position. Others so far are JSON."
     }
   ]
 }

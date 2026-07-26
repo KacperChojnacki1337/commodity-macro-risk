@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: stg_ecb__estr
+    description: >
+      ECB euro short-term rate (STR), typed and deduped. Grain: one row per
+      (rate_date, series_key). Rate is in percent.
+    columns:
+      - name: rate_key
+        description: Surrogate key over (rate_date, series_key).
+        tests: [unique, not_null]
+      - name: rate_date
+        tests: [not_null]
+      - name: series_key
+        tests: [not_null]
+      - name: rate_pct
+        description: Euro short-term rate, percent.
+        tests: [not_null]

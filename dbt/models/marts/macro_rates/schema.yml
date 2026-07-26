@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: fct_interest_rates
+    description: >
+      Daily interest rates (macro domain) with day-over-day change. Grain: one
+      row per (rate_date, series_key). ECB euro short-term rate for now.
+    columns:
+      - name: rate_key
+        description: Surrogate key over (rate_date, series_key). Primary key.
+        tests: [unique, not_null]
+      - name: date_key
+        description: FK to dim_date.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: rate_date
+        tests: [not_null]
+      - name: series_key
+        description: ECB series key.
+        tests: [not_null]
+      - name: series_name
+        description: Human-readable series name.
+      - name: rate_pct
+        description: Rate in percent.
+        tests: [not_null]
+      - name: prev_rate_pct
+        description: Previous day's rate (null on day 1).
+      - name: change_bps_pt
+        description: Change vs previous day, in percentage points.
