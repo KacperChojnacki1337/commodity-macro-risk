@@ -89,8 +89,55 @@ between sessions. The budget exists to catch the case where that is forgotten.
 
 ## Teardown runbook
 
-1. `cd infra/envs/dev && terraform destroy` (and `prod` if provisioned).
-2. In Snowflake: suspend/drop the warehouse; optionally drop the database.
-3. Confirm no lingering Azure resource groups incur cost.
-4. In Snowflake, `DROP DATABASE COMMODITY_RISK_DEV` (the clone) when idle; the
-   resource monitor keeps compute capped regardless.
+Goal: **zero standing cost** when idle. Do the Snowflake steps first (stop
+compute), then Azure.
+
+**Snowflake**
+
+```sql
+-- 1. Stop compute immediately.
+ALTER WAREHOUSE WH_XS_ELT SUSPEND;
+
+-- 2. Drop the dev clone (reclaims any diverged copy-on-write storage).
+DROP DATABASE IF EXISTS COMMODITY_RISK_DEV;
+
+-- 3. (Optional, full teardown) drop everything else. All of it is rebuildable
+--    from snowflake/*.sql + dbt, so this is safe.
+DROP DATABASE IF EXISTS COMMODITY_RISK;
+DROP WAREHOUSE IF EXISTS WH_XS_ELT;
+-- Roles, storage integration and the resource monitor can stay (they cost
+-- nothing) or be dropped for a clean slate.
+```
+
+**Azure**
+
+```bash
+# Destroy per-environment resources (ADLS, ADF, Key Vault, resource group).
+cd infra/envs/dev  && terraform destroy   # and infra/envs/prod if provisioned
+```
+
+> Leave `infra/subscription/` in place — the budget guard costs nothing and
+> should outlive the environments. Verify in the Azure portal that no resource
+> groups remain, then confirm the next invoice returns to ~0.
+
+## Rebuild from scratch (reproducibility)
+
+The whole platform is **reproducible from code**, so it can be rebuilt on a fresh
+Azure/Snowflake trial after teardown:
+
+1. **Azure infra** — `cd infra/envs/dev && terraform init && terraform apply`
+   (creates ADLS, ADF, Key Vault, role assignments). Put API keys in Key Vault
+   (`az keyvault secret set ...`); values never live in the repo.
+2. **ADF** — deploy the exported ARM template
+   ([ingestion/adf/](../ingestion/adf/)) and upload
+   [sources.json](../ingestion/control/sources.json) to the `config` container
+   (CI does this automatically on merge). Run the pipeline to land raw data.
+3. **Snowflake** — run `snowflake/00`→`07` in order (databases/warehouse → RBAC →
+   storage integration → bronze COPY → streams/tasks → zero-copy clone → resource
+   monitor). Consent the storage integration on the Azure side when `02` prompts.
+4. **dbt** — `dbt deps && dbt build` (CI runs this against the dev clone on PR and
+   prod on merge).
+5. **Power BI** — connect with `ROLE_ANALYST` (Import mode) to `MARTS` and refresh.
+
+Because every layer is code, a rebuild is deterministic — the only manual inputs
+are the API keys (into Key Vault) and the Snowflake storage-integration consent.
