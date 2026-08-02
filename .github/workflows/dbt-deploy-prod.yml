@@ -7,6 +7,11 @@ on:
   push:
     branches: [main]
     paths: ["dbt/**"]
+  # Daily production refresh: build marts from the freshly loaded bronze. Runs at
+  # 06:00 UTC, after the ADF ingest trigger (05:00) and the Snowflake bronze load
+  # task (05:30). This is the "no manual trigger" automation for the dbt layer.
+  schedule:
+    - cron: "0 6 * * *"
   workflow_dispatch: {}
 
 # Never run two prod deploys at once.
