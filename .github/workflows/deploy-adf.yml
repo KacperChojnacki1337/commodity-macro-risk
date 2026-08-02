@@ -1,0 +1,74 @@
+name: Deploy ADF
+
+# Auto-deploy the Data Factory (pipeline, datasets, linked services, and the
+# daily ScheduleTrigger) to the live factory on merge to main. Removes the manual
+# "export/redeploy in Studio" step: the repo ARM template is the source of truth.
+# Secretless via GitHub OIDC (same federated credential as sync-control-metadata).
+on:
+  push:
+    branches: [main]
+    paths: ["ingestion/adf/**"]
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write # request the OIDC token for Azure login
+  contents: read
+
+jobs:
+  deploy-adf:
+    name: deploy-adf
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Check whether Azure is configured
+        id: check
+        env:
+          CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          if [ -n "$CLIENT_ID" ] && [ -n "$RG" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Azure not configured (AZURE_CLIENT_ID / AZURE_RESOURCE_GROUP missing) -- skipping."
+          fi
+
+      - name: Azure login (OIDC)
+        if: steps.check.outputs.run == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy ARM template to the live factory
+        if: steps.check.outputs.run == 'true'
+        run: |
+          set -e
+          az extension add --name datafactory --only-show-errors || true
+          RG="${{ vars.AZURE_RESOURCE_GROUP }}"
+          FACTORY=$(jq -r '.parameters.factoryName.value' ingestion/adf/ARMTemplateParametersForFactory.json)
+          echo "Factory: $FACTORY  |  Resource group: $RG"
+
+          # ADF requires triggers to be stopped before a deployment can update them.
+          # Tolerate "does not exist yet" on the very first deploy.
+          az datafactory trigger stop \
+            --resource-group "$RG" --factory-name "$FACTORY" \
+            --name tr_daily_ingest --only-show-errors 2>/dev/null || true
+
+          # Incremental (default) = additive: never deletes objects absent from the template.
+          az deployment group create \
+            --resource-group "$RG" \
+            --template-file ingestion/adf/ARMTemplateForFactory.json \
+            --parameters @ingestion/adf/ARMTemplateParametersForFactory.json \
+            --parameters factoryName="$FACTORY" \
+            --only-show-errors
+
+          # Start the schedule trigger so ingestion runs daily with no manual click.
+          az datafactory trigger start \
+            --resource-group "$RG" --factory-name "$FACTORY" \
+            --name tr_daily_ingest --only-show-errors
+
+          echo "ADF deployed and daily ingest trigger started."
