@@ -73,7 +73,7 @@
       "source_id": "openmeteo",
       "enabled": true,
       "description": "Open-Meteo - daily weather for Warsaw (temp max/min, precipitation). Demand-signals domain.",
-      "base_url": "https://archive-api.open-meteo.com/v1/archive?latitude=52.23&longitude=21.01&start_date=2026-04-01&end_date=2026-07-20&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto",
+      "base_url": "https://archive-api.open-meteo.com/v1/archive?latitude=52.23&longitude=21.01&start_date=2026-04-01&end_date={ingest_date}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto",
       "auth_type": "none",
       "secret_name": null,
       "http_method": "GET",
@@ -84,13 +84,13 @@
       "file_name_template": "openmeteo_warsaw_daily_{ingest_date}.json",
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
-      "notes": "Keyless. Archive API returns parallel arrays under 'daily' (time[i] matches temperature_2m_max[i]); staging zips them by index. Archive has a ~5-day lag."
+      "notes": "Keyless. Archive API returns parallel arrays under 'daily' (time[i] matches temperature_2m_max[i]); staging zips them by index. Archive has a ~5-day lag. end_date={ingest_date} is replaced with today's date by ADF at runtime, so the window advances automatically."
     },
     {
       "source_id": "ecb_estr",
       "enabled": true,
       "description": "ECB - euro short-term rate (STR), daily, percent. Macro rates domain.",
-      "base_url": "https://data-api.ecb.europa.eu/service/data/EST/B.EU000A2X2A25.WT?format=csvdata&startPeriod=2026-04-01&endPeriod=2026-07-20",
+      "base_url": "https://data-api.ecb.europa.eu/service/data/EST/B.EU000A2X2A25.WT?format=csvdata&startPeriod=2026-04-01&endPeriod={ingest_date}",
       "auth_type": "none",
       "secret_name": null,
       "http_method": "GET",
@@ -101,7 +101,7 @@
       "file_name_template": "ecb_estr_{ingest_date}.csv",
       "incremental_strategy": "full_snapshot",
       "date_window_days": null,
-      "notes": "Keyless. FIRST CSV source (SDMX wide CSV, header row, quoted fields). Snowflake loads it with a CSV file format (ff_csv), selecting columns by position. Others so far are JSON."
+      "notes": "Keyless. FIRST CSV source (SDMX wide CSV, header row, quoted fields). Snowflake loads it with a CSV file format (ff_csv), selecting columns by position. Others so far are JSON. endPeriod={ingest_date} is replaced with today's date by ADF at runtime, so the window advances automatically."
     },
     {
       "source_id": "eurostat_civil_eng",
