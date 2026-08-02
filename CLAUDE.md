@@ -49,10 +49,10 @@ Detailed diagram and narrative: [docs/architecture.md](docs/architecture.md).
 | nbp        | NBP API             | USD/PLN, EUR/PLN FX rates         | none     | daily            | free |
 | eia        | EIA API             | crude / petroleum product prices  | api_key  | daily / weekly   | free |
 | ~~stooq~~  | ~~stooq.pl~~        | ~~WTI/Brent futures (CSV)~~       | ~~none~~ | ~~daily~~        | free |
-| worldbank  | World Bank Pink Sheet | global commodity price indices  | none     | monthly          | free |
-| ecb        | ECB SDW             | Euribor / ECB policy rates        | none     | daily / monthly  | free |
-| gus        | GUS BDL API         | PL construction / production      | api_key* | monthly / quarterly | free |
-| eurostat   | Eurostat API        | EU construction output, PPI       | none     | monthly          | free |
+| ~~worldbank~~ | ~~World Bank Pink Sheet~~ | ~~global commodity indices~~ | ~~none~~ | ~~monthly~~ | free |
+| ecb        | ECB SDW             | euro short-term rate (eSTR)       | none     | daily            | free |
+| gus        | GUS BDL API         | PL roads (expressway/motorway km) | none*    | annual           | free |
+| eurostat   | Eurostat API        | PL civil-engineering index (roads)| none     | monthly          | free |
 | openmeteo  | Open-Meteo          | weather (history + forecast, PL)  | none     | daily            | free |
 
 \* GUS BDL works without a key at low rates; a free key raises limits.
@@ -63,6 +63,11 @@ longer scriptable for automated ingestion. We use **EIA** spot prices instead �
 WTI (series `RWTC`) and Brent (`RBRTE`) — via the same api_key source. Free
 reliable *futures* data is not available without a paid provider; spot prices
 are sufficient for the price-risk domain.
+
+**World Bank Pink Sheet:** dropped — it ships as a multi-sheet `.xlsx`, not a
+clean API/CSV/JSON feed, so it does not fit the metadata-driven Copy pattern
+(same reason as stooq). Commodity indices are already covered by EIA; skipped as
+issue #18 (not planned).
 
 ## 5. Naming Conventions
 
@@ -77,10 +82,12 @@ are sufficient for the price-risk domain.
 
 ## 6. Environments & CI/CD
 
-- **dev vs prod** = separate Snowflake schemas (not separate accounts);
-  dev may be a **zero-copy clone** of prod.
-- **GitHub Actions:** on PR → `dbt build` against the **dev** target +
-  `terraform plan`; on merge to `main` → `dbt run` against **prod**.
+- **dev vs prod** = separate Snowflake **databases** (not separate accounts):
+  prod `COMMODITY_RISK`, dev `COMMODITY_RISK_DEV` (a **zero-copy clone**); dbt
+  targets select between them.
+- **GitHub Actions:** on PR → `dbt build` against the **dev clone** +
+  `sources.json`/Terraform validation; on merge to `main` → `dbt build` against
+  **prod** + `sources.json` sync to ADLS.
 - **dbt** runs as **dbt Core** inside GitHub Actions (no dbt Cloud).
 
 ### Branching & PR flow
