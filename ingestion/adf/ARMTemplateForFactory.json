@@ -266,7 +266,7 @@
                                             "referenceName": "ds_src_http_bin",
                                             "type": "DatasetReference",
                                             "parameters": {
-                                                "baseUrl": "@item().base_url",
+                                                "baseUrl": "@replace(item().base_url, '{ingest_date}', formatDateTime(utcnow(), 'yyyy-MM-dd'))",
                                                 "relativeUrl": "@''"
                                             }
                                         }
@@ -392,7 +392,7 @@
                                             "referenceName": "ds_src_http_bin",
                                             "type": "DatasetReference",
                                             "parameters": {
-                                                "baseUrl": "@concat(item().base_url, '&api_key=', activity('web_get_secret').output.value)",
+                                                "baseUrl": "@concat(replace(item().base_url, '{ingest_date}', formatDateTime(utcnow(), 'yyyy-MM-dd')), '&api_key=', activity('web_get_secret').output.value)",
                                                 "relativeUrl": "@''"
                                             }
                                         }

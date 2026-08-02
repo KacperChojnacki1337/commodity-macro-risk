@@ -12,7 +12,7 @@ new source = adding one object here — no new pipeline.
 | `source_id` | Short identifier (e.g. `nbp`); also used in the ADLS path. |
 | `enabled` | `true`/`false`. ForEach processes only enabled sources. A kill switch. |
 | `description` | Human-readable description of the source. |
-| `base_url` | API endpoint the pipeline calls. |
+| `base_url` | API endpoint the pipeline calls. `{ingest_date}` inside it is replaced with today's date at runtime, for rolling date windows (e.g. Open-Meteo `end_date`, ECB `endPeriod`). |
 | `auth_type` | `none` / `api_key` / `header`. How to authenticate. |
 | `secret_name` | **Name** of the Key Vault secret (never the secret value). `null` if keyless. |
 | `http_method` | HTTP verb, usually `GET`. |
