@@ -3,16 +3,26 @@
 -- Replaces the manual COPY runs from 03_bronze_tables.sql. One procedure runs
 -- every source's COPY (each idempotent: COPY skips files already loaded, so only
 -- new daily files land), and a single scheduled Task calls it once a day.
--- This is the "no manual trigger" automation for the bronze layer.
+--
+-- Least-privilege: the procedure and task are owned by ROLE_LOADER (which owns
+-- BRONZE and can COPY), NOT ACCOUNTADMIN. The task therefore runs with only the
+-- privileges the load actually needs.
 -- =============================================================================
 
-USE ROLE ACCOUNTADMIN;   -- inherits ROLE_LOADER (owner of BRONZE) via the hierarchy
+-- --- Account-level grant (ACCOUNTADMIN): let ROLE_LOADER run scheduled tasks ---
+USE ROLE ACCOUNTADMIN;
+GRANT EXECUTE TASK ON ACCOUNT TO ROLE ROLE_LOADER;
+
+-- --- Everything below is created AS ROLE_LOADER (owner of BRONZE) ---
+USE ROLE ROLE_LOADER;
 USE DATABASE COMMODITY_RISK;
 USE SCHEMA BRONZE;
 USE WAREHOUSE WH_XS_ELT;
 
 -- Procedure: run the COPY for each source. ON_ERROR=ABORT_STATEMENT so a bad file
 -- fails the task loudly (visible in TASK_HISTORY) instead of silently skipping.
+-- Runs with owner's rights (ROLE_LOADER): LOADER owns the bronze tables + stage
+-- and has USAGE on the storage integration.
 CREATE OR REPLACE PROCEDURE sp_load_bronze()
     RETURNS STRING
     LANGUAGE SQL
@@ -65,9 +75,22 @@ AS
 -- Tasks are created suspended; resume to put it on the schedule.
 ALTER TASK bronze_load_task RESUME;
 
+-- --- Optional: failure alerting (run as ACCOUNTADMIN) --------------------------
+-- Sends an email when the task errors. Requires a verified account email; the
+-- dbt "source freshness" gate (in CI) is the primary staleness safety net, so
+-- this is a nice-to-have. Uncomment and set a verified recipient to enable.
+--
+-- USE ROLE ACCOUNTADMIN;
+-- CREATE NOTIFICATION INTEGRATION IF NOT EXISTS notify_pipeline_errors
+--     TYPE = EMAIL ENABLED = TRUE
+--     ALLOWED_RECIPIENTS = ('<your-verified-account-email>');
+-- GRANT USAGE ON INTEGRATION notify_pipeline_errors TO ROLE ROLE_LOADER;
+-- USE ROLE ROLE_LOADER;
+-- ALTER TASK bronze_load_task SET ERROR_INTEGRATION = notify_pipeline_errors;
+
 -- --- Inspection ---
--- SHOW TASKS LIKE 'bronze_load_task';
--- CALL sp_load_bronze();                       -- run now (don't wait for schedule)
+-- SHOW TASKS LIKE 'bronze_load_task';   -- check "owner" = ROLE_LOADER, state = started
+-- CALL sp_load_bronze();                -- run now (don't wait for schedule)
 -- SELECT name, state, scheduled_time, query_start_time, error_message
 --   FROM TABLE(information_schema.task_history(task_name => 'BRONZE_LOAD_TASK'))
 --   ORDER BY scheduled_time DESC;

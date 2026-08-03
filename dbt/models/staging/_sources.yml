@@ -11,6 +11,12 @@ sources:
 
     tables:
       - name: nbp_fx_rates_raw
+        # Daily source: warn/error if bronze hasn't loaded recently (staleness gate).
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
         description: >
           NBP Table A (average FX rates) as landed: one row per source file,
           holding the raw JSON document plus load lineage.
@@ -23,6 +29,11 @@ sources:
             description: Timestamp when COPY INTO loaded the file.
 
       - name: eia_petroleum_spot_raw
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
         description: >
           EIA petroleum spot prices (any series: WTI RWTC, Brent RBRTE, ...) as
           landed: the whole JSON document per file; daily rows live under
@@ -36,6 +47,11 @@ sources:
             description: Timestamp when COPY INTO loaded the file.
 
       - name: openmeteo_weather_raw
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
         description: >
           Open-Meteo daily weather as landed: the whole JSON document per file.
           Measurements are PARALLEL arrays under raw:daily (time[i] matches
@@ -74,6 +90,11 @@ sources:
             description: Timestamp when COPY INTO loaded the file.
 
       - name: ecb_estr_raw
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
         description: >
           ECB euro short-term rate. Unlike the others this source is CSV, so the
           bronze is structured (columns projected by position in the COPY), not
