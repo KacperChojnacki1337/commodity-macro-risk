@@ -25,7 +25,7 @@ Currently configured (used by `dbt-ci.yml`):
 | `SNOWFLAKE_ACCOUNT` | account identifier, `ORG-ACCOUNT` form |
 | `SNOWFLAKE_USER` | Snowflake login |
 | `SNOWFLAKE_PASSWORD` | password (secret) |
-| `SNOWFLAKE_ROLE` | `ACCOUNTADMIN` (until `ROLE_LOADER` exists, #10) |
+| `SNOWFLAKE_ROLE` | `ROLE_LOADER` (least-privilege write role; owns BRONZE/STAGING/MARTS) |
 | `SNOWFLAKE_WAREHOUSE` | `WH_XS_ELT` |
 | `SNOWFLAKE_DATABASE` | `COMMODITY_RISK` |
 

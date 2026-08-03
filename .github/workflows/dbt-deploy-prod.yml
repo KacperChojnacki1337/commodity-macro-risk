@@ -57,6 +57,23 @@ jobs:
         working-directory: dbt
         run: cp profiles.example.yml profiles.yml
 
+      # Daily staleness gate: on the scheduled run, fail loudly if bronze has not
+      # been loaded recently (an upstream ADF/task failure) instead of silently
+      # rebuilding stale data. Skipped on merge-triggered deploys — a code change
+      # should not be blocked by data freshness.
+      - name: dbt source freshness (daily staleness gate)
+        if: steps.check.outputs.run == 'true' && github.event_name == 'schedule'
+        working-directory: dbt
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        run: |
+          dbt deps
+          dbt source freshness --profiles-dir . --target prod
+
       # Same models, PROD target (database COMMODITY_RISK) — this is the deploy.
       - name: dbt build (prod target)
         if: steps.check.outputs.run == 'true'
