@@ -27,6 +27,11 @@ models:
         description: Daily minimum temperature (C).
       - name: temp_avg_c
         description: Mean of daily max and min (C).
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: -50
+                max_value: 60
       - name: precip_mm
         description: Daily precipitation total (mm).
         tests:

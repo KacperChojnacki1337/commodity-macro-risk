@@ -26,7 +26,12 @@ models:
         description: Human-readable series name.
       - name: rate_pct
         description: Rate in percent.
-        tests: [not_null]
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: -5
+                max_value: 25
       - name: prev_rate_pct
         description: Previous day's rate (null on day 1).
       - name: change_bps_pt
