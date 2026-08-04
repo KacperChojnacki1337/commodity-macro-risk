@@ -28,6 +28,7 @@ Currently configured (used by `dbt-ci.yml`):
 | `SNOWFLAKE_ROLE` | `ROLE_LOADER` (least-privilege write role; owns BRONZE/STAGING/MARTS) |
 | `SNOWFLAKE_WAREHOUSE` | `WH_XS_ELT` |
 | `SNOWFLAKE_DATABASE` | `COMMODITY_RISK` |
+| `HEALTHCHECK_URL` | *(optional)* healthchecks.io ping URL — the daily `dbt-deploy-prod` run pings it as a **dead-man's switch** (see below) |
 
 **Never commit secret values.** Reference them as `${{ secrets.NAME }}` only.
 
@@ -66,6 +67,19 @@ rebuilding on a fresh trial (then update `AZURE_CLIENT_ID` /
 > 'ACCOUNTADMIN')`. A missing secret resolves to an **empty string**, not to
 > "unset" — and `env_var` only falls back to its default when the variable is
 > unset. Empty is not absent.
+
+## Dead-man's switch (why `HEALTHCHECK_URL`)
+
+GitHub **automatically disables a scheduled workflow after 60 days with no repo
+activity**. That would silently stop the daily `dbt-deploy-prod` run — and with
+it the `dbt source freshness` staleness gate, i.e. the safety net itself goes
+dark with no signal.
+
+To catch that, the daily run pings an external healthcheck (e.g.
+[healthchecks.io](https://healthchecks.io), free) on every run: the ping URL on
+success, `<url>/fail` on failure. If the run stops (disabled) or fails, the
+**missing** ping makes the external monitor email you. Set `HEALTHCHECK_URL` to
+enable it; without it the step is a no-op.
 
 ## Operational note: when a trial expires
 

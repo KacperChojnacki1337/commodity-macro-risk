@@ -87,3 +87,20 @@ jobs:
         run: |
           dbt deps
           dbt build --profiles-dir . --target prod
+
+      # Dead-man's switch: GitHub disables a scheduled workflow after 60 days of
+      # repo inactivity — which would silently stop this daily run AND the
+      # freshness gate. Ping an external healthcheck on every run; if the run
+      # stops (disabled) or fails, the missing ping makes the monitor alert.
+      # No-op unless HEALTHCHECK_URL is set (e.g. a healthchecks.io ping URL).
+      - name: Healthcheck ping (dead-man's switch)
+        if: always() && steps.check.outputs.run == 'true'
+        env:
+          HC: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          [ -z "$HC" ] && { echo "HEALTHCHECK_URL not set -- skipping"; exit 0; }
+          if [ "${{ job.status }}" = "success" ]; then
+            curl -fsS -m 10 --retry 3 "$HC" && echo "healthcheck: ok"
+          else
+            curl -fsS -m 10 --retry 3 "$HC/fail" && echo "healthcheck: fail signalled"
+          fi

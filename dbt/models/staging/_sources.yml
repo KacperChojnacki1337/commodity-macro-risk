@@ -65,6 +65,14 @@ sources:
             description: Timestamp when COPY INTO loaded the file.
 
       - name: eurostat_civil_eng_raw
+        # Re-landed daily by ADF (new dated file each day), so _loaded_at is fresh
+        # daily even though the underlying data is monthly — same gate as the
+        # daily sources catches a stopped pipeline.
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
         description: >
           Eurostat civil engineering production index (JSON-stat). The whole
           document lands in a VARIANT; observations are a flat {index:value} map
@@ -78,6 +86,13 @@ sources:
             description: Timestamp when COPY INTO loaded the file.
 
       - name: gus_roads_raw
+        # Re-landed daily by ADF, so _loaded_at is fresh daily even though the
+        # underlying data is annual.
+        config:
+          loaded_at_field: _loaded_at
+          freshness:
+            warn_after: { count: 26, period: hour }
+            error_after: { count: 50, period: hour }
         description: >
           GUS BDL expressway/motorway length (annual). VARIANT document with
           results[] per area, each holding a values[] array of {year, val}.
