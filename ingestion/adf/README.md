@@ -24,6 +24,11 @@ redeployed from here after a `terraform destroy` or on a fresh Azure trial.
   substituted for `{ingest_date}`, so re-runs overwrite the day's partition
   (idempotent). Adding a source = a new entry in
   [../control/sources.json](../control/sources.json), not a new pipeline.
+- **Trigger `tr_daily_ingest`** — a daily ScheduleTrigger (05:00 UTC) that runs
+  the pipeline automatically, with no manual click.
+
+`{ingest_date}` is also substituted into each source's `base_url`, so date-window
+sources (Open-Meteo, ECB) advance their end date to "today" on every run.
 
 ## No secrets
 
@@ -32,6 +37,11 @@ factory's managed identity (granted `Storage Blob Data Contributor` via
 Terraform). The only parameter values are resource names/URLs.
 
 ## Redeploy
+
+On merge to `main`, **[`deploy-adf.yml`](../../.github/workflows/deploy-adf.yml)
+deploys this template to the live factory automatically** (OIDC; it stops/starts
+the trigger around the deploy). The manual command below is the fallback /
+first-time deploy.
 
 `sources.json` must exist in the storage `config` container first, then deploy
 the template to a factory (parameter values are environment-specific — the

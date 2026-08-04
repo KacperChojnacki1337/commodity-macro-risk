@@ -20,7 +20,9 @@ reporting in petroleum-products trading.
 - **Infrastructure as Code** — Terraform for all Azure resources (ADLS, ADF, Key Vault) with reusable modules and a per-environment split.
 - **CI/CD** — GitHub Actions: PR builds dbt against a dev clone, merge deploys to prod; secretless auth via OIDC and managed identities.
 - **Power BI** — a star-schema model and DAX from basics to advanced (`CALCULATE`, `ALL` / `ALLSELECTED`, `RANKX`, time intelligence).
-- **Security** — API keys live only in Azure Key Vault (referenced by name); no secrets in the repo.
+- **Security** — API keys live only in Azure Key Vault (referenced by name); no secrets in the repo; least-privilege Snowflake roles (the loader task and CI run as `ROLE_LOADER`, not admin).
+- **Orchestration & reliability** — the pipeline runs itself daily with no manual trigger (ADF schedule trigger 05:00 → Snowflake Task loads bronze 05:30 → dbt cron builds marts 06:00; ADF auto-deploys from the repo). A `dbt source freshness` gate turns silent staleness into a loud failure; failures alert three independent ways, with a healthcheck **dead-man's switch** guarding the scheduler itself.
+- **Change tracking** — a dbt snapshot (SCD Type 2) records revisions and withdrawals of the Eurostat index; dynamic date windows (`{ingest_date}`) keep every source current automatically.
 
 ## Architecture
 
@@ -134,6 +136,8 @@ trial. Details: [docs/cost_model.md](docs/cost_model.md).
 
 ## Status
 
-Core platform complete: ingestion, Snowflake modeling, dbt medallion, CI/CD, and
-a three-page Power BI dashboard. Remaining work (final visual polish, ops notes)
-is tracked as GitHub Issues on the project board.
+Complete and self-running: the daily pipeline is fully automated (ingest → bronze
+→ marts) with least-privilege roles, a freshness gate, three-way alerting, and a
+three-page Power BI dashboard. Only the Power BI refresh is manual — by design,
+since auto-refresh needs paid Power BI Service. Remaining work (final visual
+polish) is tracked as GitHub Issues on the project board.
