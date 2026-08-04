@@ -34,7 +34,7 @@ detailed and step by step.
 8 public APIs
    → Azure Data Factory (metadata-driven: Lookup sources.json → ForEach → Copy)
    → ADLS Gen2 RAW zone   (land as-is, partitioned by source + ingest_date)
-   → Snowflake BRONZE     (external stage + COPY INTO / Snowpipe demo; VARIANT)
+   → Snowflake BRONZE     (external stage + scheduled COPY via Task; VARIANT)
    → Snowflake (Streams + Tasks incremental → working tables)
    → dbt Core medallion   (staging → intermediate → marts)  [SILVER → GOLD]
    → Power BI             (connects with read-only analyst role)
@@ -125,7 +125,9 @@ One generic ADF pipeline reads [ingestion/control/sources.json](ingestion/contro
 via a Lookup activity, then a ForEach iterates enabled sources and calls a
 parameterized child pipeline. Adding a source = a JSON entry, not a new
 pipeline. Snowflake load: external stage + scheduled `COPY` via Task as the
-main pattern; **Snowpipe auto-ingest demoed on one source only**.
+load pattern (`snowflake/05`, a scheduled Task calling `sp_load_bronze`). Snowpipe
+auto-ingest was considered but not built — a daily batch does not need event-driven
+ingest.
 
 ## 9. Secrets
 

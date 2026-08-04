@@ -88,9 +88,10 @@ risk, FX exposure, demand signals.
   `MARTS` layer with an `ASOF JOIN` onto a daily calendar spine — each day takes
   the last-known value of every source, giving exactly one row per day with no
   fan-out (guarded by a `unique` test on the grain).
-- **Snowpipe vs scheduled COPY.** The main load pattern is an external stage +
-  scheduled `COPY` (Task); Snowpipe auto-ingest is demoed conceptually on a single
-  source only, to keep cost and moving parts down.
+- **Snowpipe vs scheduled COPY.** The load pattern is an external stage +
+  scheduled `COPY`, run by a Snowflake Task (`snowflake/05`, daily). Snowpipe
+  auto-ingest was considered but not built — a daily batch does not need
+  event-driven ingest, and a scheduled Task keeps moving parts and cost down.
 - **dev vs prod.** Separate Snowflake databases, with dev as a zero-copy clone of
   prod; dbt targets select between them, driven by CI.
 
