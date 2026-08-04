@@ -5,24 +5,40 @@
 -- new daily files land), and a single scheduled Task calls it once a day.
 --
 -- Least-privilege: the procedure and task are owned by ROLE_LOADER (which owns
--- BRONZE and can COPY), NOT ACCOUNTADMIN. The task therefore runs with only the
--- privileges the load actually needs.
+-- BRONZE and can COPY), NOT ACCOUNTADMIN. On failure the procedure emails an
+-- alert (see below).
 -- =============================================================================
 
--- --- Account-level grant (ACCOUNTADMIN): let ROLE_LOADER run scheduled tasks ---
+-- --- ACCOUNTADMIN: account grant + failure-alert email integration ------------
 USE ROLE ACCOUNTADMIN;
+
+-- Let ROLE_LOADER run scheduled tasks.
 GRANT EXECUTE TASK ON ACCOUNT TO ROLE ROLE_LOADER;
 
--- --- Everything below is created AS ROLE_LOADER (owner of BRONZE) ---
+-- Email integration for failure alerts. The recipient MUST be a verified email
+-- of a user in the account. Replace the placeholder before running -- a personal
+-- email is never committed to the repo.
+CREATE NOTIFICATION INTEGRATION IF NOT EXISTS notify_pipeline_errors
+    TYPE = EMAIL
+    ENABLED = TRUE
+    ALLOWED_RECIPIENTS = ('<your-verified-account-email>')
+    COMMENT = 'Pipeline task failure alerts';
+GRANT USAGE ON INTEGRATION notify_pipeline_errors TO ROLE ROLE_LOADER;
+
+-- --- Everything below is created AS ROLE_LOADER (owner of BRONZE) -------------
 USE ROLE ROLE_LOADER;
 USE DATABASE COMMODITY_RISK;
 USE SCHEMA BRONZE;
 USE WAREHOUSE WH_XS_ELT;
 
 -- Procedure: run the COPY for each source. ON_ERROR=ABORT_STATEMENT so a bad file
--- fails the task loudly (visible in TASK_HISTORY) instead of silently skipping.
--- Runs with owner's rights (ROLE_LOADER): LOADER owns the bronze tables + stage
--- and has USAGE on the storage integration.
+-- raises; the EXCEPTION handler then emails an alert and re-raises so the task run
+-- is still marked failed. Runs with owner's rights (ROLE_LOADER): LOADER owns the
+-- bronze tables + stage and has USAGE on the storage + notification integrations.
+--
+-- Why email from inside the procedure (not the task's ERROR_INTEGRATION): a task's
+-- ERROR_INTEGRATION only accepts a cloud-queue integration, not an EMAIL one, so
+-- we send via SYSTEM$SEND_EMAIL here (which does accept the EMAIL integration).
 CREATE OR REPLACE PROCEDURE sp_load_bronze()
     RETURNS STRING
     LANGUAGE SQL
@@ -60,6 +76,15 @@ BEGIN
     PATTERN = '.*gus_expressways_motorways_.*[.]json' ON_ERROR = 'ABORT_STATEMENT';
 
     RETURN 'bronze load complete';
+EXCEPTION
+    WHEN OTHER THEN
+        CALL SYSTEM$SEND_EMAIL(
+            'notify_pipeline_errors',
+            '<your-verified-account-email>',
+            'Commodity pipeline: bronze load FAILED',
+            'sp_load_bronze failed. SQLERRM: ' || SQLERRM
+        );
+        RAISE;
 END;
 $$;
 
@@ -74,19 +99,6 @@ AS
 
 -- Tasks are created suspended; resume to put it on the schedule.
 ALTER TASK bronze_load_task RESUME;
-
--- --- Optional: failure alerting (run as ACCOUNTADMIN) --------------------------
--- Sends an email when the task errors. Requires a verified account email; the
--- dbt "source freshness" gate (in CI) is the primary staleness safety net, so
--- this is a nice-to-have. Uncomment and set a verified recipient to enable.
---
--- USE ROLE ACCOUNTADMIN;
--- CREATE NOTIFICATION INTEGRATION IF NOT EXISTS notify_pipeline_errors
---     TYPE = EMAIL ENABLED = TRUE
---     ALLOWED_RECIPIENTS = ('<your-verified-account-email>');
--- GRANT USAGE ON INTEGRATION notify_pipeline_errors TO ROLE ROLE_LOADER;
--- USE ROLE ROLE_LOADER;
--- ALTER TASK bronze_load_task SET ERROR_INTEGRATION = notify_pipeline_errors;
 
 -- --- Inspection ---
 -- SHOW TASKS LIKE 'bronze_load_task';   -- check "owner" = ROLE_LOADER, state = started
