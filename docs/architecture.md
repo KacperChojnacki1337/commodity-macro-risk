@@ -101,6 +101,28 @@ PR → validate `sources.json` + Terraform, and `dbt build` against the dev clon
 Merge to `main` → `dbt build` against prod and sync `sources.json` to ADLS. Azure
 login uses GitHub OIDC (no stored credentials).
 
+## Scheduling & monitoring
+
+The platform refreshes itself daily with **no manual trigger** — three schedulers
+chained by time offset:
+
+- **05:00 UTC** — ADF trigger `tr_daily_ingest` runs `pl_ingest_source` (APIs → ADLS).
+- **05:30 UTC** — Snowflake Task `bronze_load_task` runs `sp_load_bronze` (ADLS → bronze; idempotent COPY).
+- **06:00 UTC** — GitHub Actions cron runs `dbt build --target prod` (bronze → marts + snapshot).
+
+ADF changes auto-deploy to the live factory on merge (`deploy-adf.yml`, OIDC).
+
+**Failure never goes silent** — three independent paths:
+
+1. A bronze COPY error emails via `SYSTEM$SEND_EMAIL` and fails the task.
+2. `dbt source freshness` turns stale bronze (any upstream failure) into a red
+   daily run → GitHub email.
+3. GitHub emails on any CI/deploy failure.
+
+Plus a **dead-man's switch**: the daily run pings a healthcheck; if it stops
+(GitHub disables schedules after 60 days idle) or fails, the missing ping alerts
+externally — so even the loss of the safety net is detectable.
+
 ## Diagrams
 
 Rendered inline above (Mermaid). Source-of-truth for the flow is this file and
