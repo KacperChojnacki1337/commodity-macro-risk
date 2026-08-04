@@ -38,7 +38,7 @@ cp profiles.example.yml profiles.yml      # profiles.yml is gitignored
 | `SNOWFLAKE_ACCOUNT` | `MYORG-AB12345` |
 | `SNOWFLAKE_USER` | your Snowflake login |
 | `SNOWFLAKE_PASSWORD` | secret — env var only |
-| `SNOWFLAKE_ROLE` | `ACCOUNTADMIN` (until `ROLE_LOADER` exists, #10) |
+| `SNOWFLAKE_ROLE` | `ROLE_LOADER` (least-privilege write role) |
 | `SNOWFLAKE_WAREHOUSE` | `WH_XS_ELT` |
 | `SNOWFLAKE_DATABASE` | `COMMODITY_RISK` |
 

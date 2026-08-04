@@ -2,8 +2,8 @@
 
 SQL that sets up Snowflake outside of dbt: account foundations, external
 access to ADLS, and the BRONZE landing tables. Run these in a Snowsight
-worksheet as `ACCOUNTADMIN`. (Least-privilege roles `ROLE_LOADER` /
-`ROLE_ANALYST` come in the RBAC milestone, #10.)
+worksheet as `ACCOUNTADMIN`; some scripts then switch to `ROLE_LOADER` (the
+least-privilege write role) to create objects it should own.
 
 Transformations (STAGING -> MARTS) live in the dbt project, not here. Note the
 name clash: a Snowflake **stage** (a pointer to files, used by `COPY`) is not
@@ -20,7 +20,7 @@ the dbt **staging** layer (SQL models that clean data already in Snowflake).
 | `04_streams_tasks.sql` | Native incremental (CDC) demo: a `STREAM` on the bronze table + a scheduled `TASK` that flattens only the delta into a working table (`nbp_fx_rates_flat`). | Complements dbt; does not replace it. The task runs only `WHEN SYSTEM$STREAM_HAS_DATA` (zero cost when idle). `ALTER TASK ... SUSPEND` to stop scheduling. |
 | `05_bronze_load_task.sql` | Automated ADLS -> BRONZE load: a stored procedure runs every source's `COPY` (idempotent) and a scheduled `TASK` (`bronze_load_task`, daily 05:30 UTC) calls it — replaces the manual COPY runs from 03. | Requires 02 (stage) + 03 (tables). `ALTER TASK bronze_load_task SUSPEND` to stop. |
 | `06_zero_copy_clone.sql` | Creates `COMMODITY_RISK_DEV`, a **zero-copy clone** of prod, and re-applies the RBAC grants. dbt's `dev` target builds here; `prod` target is the original. | Instant, ~0 storage (copy-on-write). **Refresh = re-run** (`CREATE OR REPLACE ... CLONE`). CI's `dbt build --target dev` needs this clone to exist. |
-| `07_resource_monitor.sql` | Cost controls: enforces the X-Small / auto-suspend warehouse and adds a **resource monitor** (`rm_commodity_risk`, 20 credits/month) that auto-suspends on overspend. | Requires ACCOUNTADMIN. Real usage + rationale in [../docs/cost_model.md](../docs/cost_model.md). |
+| `07_resource_monitor.sql` | Cost controls: enforces the X-Small / auto-suspend warehouse and adds a **resource monitor** (`rm_commodity_risk`, 8 credits/month) that auto-suspends on overspend. | Requires ACCOUNTADMIN. Real usage + rationale in [../docs/cost_model.md](../docs/cost_model.md). |
 
 ## Azure handshake (between PART 1 and PART 2 of `02`)
 

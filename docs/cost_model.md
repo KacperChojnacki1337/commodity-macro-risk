@@ -68,7 +68,7 @@ runaway query loop is stopped long before it matters.
 
 At X-Small (~1 credit/hour), 2.3 credits across a month means compute is
 effectively free; storage at ~0.3 MB is a rounding error against Snowflake's
-~$23-40/TB/month. The 20-credit cap is ~10x headroom over real use — purely a
+~$23-40/TB/month. The 8-credit cap is ~3-4x headroom over real use — purely a
 safety net.
 
 **Azure is now Pay-As-You-Go** (the free trial expired and was upgraded, keeping
